@@ -1,0 +1,14 @@
+disabled = false
+languageCode = "es"
+weight = 1
+title = "NSStudent blog"
+
+[params]
+displayName = "Español"
+logo = "img/icon45.png"
+secondaryLogo = "img/icon45dark.png"
+description = "Blog personal"
+
+[params.author]
+name = "NSStudent" 
+headline = "blog"
