@@ -11,5 +11,11 @@ description = "Personal blog"
 
 [params.author]
 name = "NSStudent" 
-headline = "blog"
+headline = "Blog"
+image = "img/nsstudent-author.jpg"
+bio = "iOS developer and amateur chess player"
+links = [
+{ x-twitter = "https://x.com/NSStudent" },
+{ github = "https://github.com/NSStudent" },
+]
     

@@ -5,6 +5,12 @@ none = "none"
 name = "Posts"
 pageRef = "posts"
 identifier = "vsDrLqjpkb"
+weight = 9998
+
+[[main]]
+name = "About me"
+pageRef = "about.en.md"
+identifier = "vsDrLqjpkt"
 weight = 9999
 
 [[main]]
