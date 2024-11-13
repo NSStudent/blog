@@ -2,3 +2,6 @@
 	path = themes/blowfish
 	url = https://github.com/nunocoracao/blowfish.git
 	branch = main
+[submodule "public"]
+	path = public
+	url = https://nsstudent@github.com/NSStudent/NSStudent.github.io.git

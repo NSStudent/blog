@@ -1,5 +1,6 @@
 ---
 lang: en
+tags: ["author"]
 ---
 
 # About me
