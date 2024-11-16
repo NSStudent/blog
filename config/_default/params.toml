@@ -39,9 +39,9 @@ showLikes = false
 showDateOnlyInArticle = false
 showDateUpdated = false
 showAuthor = true
-showHero = true
+showHero = false
 layoutBackgroundBlur = true
-layoutBackgroundHeaderSpace = true
+layoutBackgroundHeaderSpace = false
 showBreadcrumbs = true
 showDraftLabel = true
 showEdit = false
@@ -56,7 +56,7 @@ showTaxonomies = true
 showAuthorsBadges = true
 showWordCount = true
 showZenMode = true
-heroStyle = "background"
+heroStyle = "big"
 
 [list]
 showHero = false
