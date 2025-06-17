@@ -11,16 +11,17 @@
     --color-neutral-800: 41, 37, 36;
     --color-neutral-900: 28, 25, 23;
   
-    --color-primary-50:     255, 143, 228; /* Rosa claro */
-    --color-primary-100:    245, 120, 220;
-    --color-primary-200:    230, 90, 200;
-    --color-primary-300:    210, 60, 180; /* Rosa intenso */
-    --color-primary-400:    190, 50, 150;
-    --color-primary-500:    160, 30, 120;
-    --color-primary-600:    130, 20, 90;
-    --color-primary-700:    110, 15, 70;
-    --color-primary-800:    90, 10, 50;
-    --color-primary-900:    70, 5, 30;
+    --color-primary-50: 250, 246, 254;
+    --color-primary-100: 242, 234, 253;
+    --color-primary-200: 231, 217, 251;
+    --color-primary-300: 213, 188, 246;
+    --color-primary-400: 187, 145, 239;
+    --color-primary-500: 161, 103, 230;
+    --color-primary-600: 138, 70, 215;
+    --color-primary-700: 117, 52, 188;
+    --color-primary-800: 100, 47, 154;
+    --color-primary-900: 82, 39, 124;
+    --color-primary-950: 54, 17, 90;
   
     --color-secondary-50:   160, 239, 194; /* Verde claro */
     --color-secondary-100:  145, 210, 180;

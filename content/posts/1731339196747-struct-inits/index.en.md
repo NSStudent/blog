@@ -16,7 +16,7 @@ To avoid this problem, the best way is to include our initializer inside an exte
 
 This way, we'll keep the two builders
 
-```
+```swift
 struct Person {
     let name: String
     let birthday: Date
