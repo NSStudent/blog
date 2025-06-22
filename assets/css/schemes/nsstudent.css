@@ -50,4 +50,42 @@
     --cursor-color:         186, 186, 186;
     --selection-color:      68, 71, 90;
     --selection-text-color: 255, 255, 255;
-  }
+}
+
+.prose .chroma-custom-dark:before {
+  background: #fc625d;
+  border-radius: 50%;
+  box-shadow: 20px 0 #fdbc40, 40px 0 #35cd4b;
+  content: " ";
+  height: 12px;
+  left: 12px;
+  margin-top: -20px;
+  position: absolute;
+  width: 12px;
+  z-index: 1;
+}
+
+.prose .chroma-custom-dark {
+  padding-top: 30px;
+  border: 1px solid rgb(80, 80, 80); /* borde más oscuro para dark mode */
+  border-radius: 6px;
+}
+
+.prose .chroma-custom:before {
+  background: #fc625d;
+  border-radius: 50%;
+  box-shadow: 20px 0 #fdbc40, 40px 0 #35cd4b;
+  content: " ";
+  height: 12px;
+  left: 12px;
+  margin-top: -20px;
+  position: absolute;
+  width: 12px;
+  z-index: 1;
+}
+
+.prose .chroma-custom {
+  padding-top: 30px;
+  border: 1px solid rgb(200, 200, 200); /* color claro para light mode */
+  border-radius: 6px;
+}

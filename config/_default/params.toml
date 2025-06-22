@@ -2,7 +2,7 @@ colorScheme = "NSStudent"
 defaultAppearance = "dark"
 autoSwitchAppearance = true
 enableSearch = true
-enableCodeCopy = true
+enableCodeCopy = false
 replyByEmail = false
 disableImageOptimization = true
 disableTextInHeader = false
@@ -20,6 +20,7 @@ showCopyright = true
 showThemeAttribution = true
 showAppearanceSwitcher = true
 showScrollToTop = true
+
 
 [homepage]
 layout = "background"

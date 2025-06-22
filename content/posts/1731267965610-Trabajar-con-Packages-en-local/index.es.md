@@ -21,7 +21,7 @@ Mientras estás desarrollando tu dependencia una de las necesidades es poder mod
 
 El primer paso seria crear el package, para ello crea una carpeta en la ruta donde quieras hacer el ejemplo y dentro de esta carpeta ejecuta la inicialización del package.
 
-```
+```bash
 mkdir PackageExample
 cd PackageExample
 swift package init
@@ -29,7 +29,7 @@ swift package init
 
 Para este tutorial vamos a crear el proyecto nuevo al que queremos incluir este package a la misma altura que la carpeta contenedora, esta seria la estructura de la carpeta actualmente.
 
-```
+```bash
 Carpeta Contenedora
     - ExampleProject
     - PackageExample
