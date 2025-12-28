@@ -1,3 +1,5 @@
+
+
 .chroma,
 .chroma *,
 .chroma:is(.dark *),
@@ -33,12 +35,34 @@ html.dark .prose .highlight {
 
 .prose .highlight pre.chroma {
   margin: 0;
-  padding-top: 0;
+  padding-top: 12px;
   border: 0;
   border-radius: inherit;
   overflow: auto; /* para que el scroll no afecte los círculos */
 }
 
+img[src$='#center']
+{
+    display: block;
+    margin: 0.7rem auto; /* you can replace the vertical '0.7rem' by
+                            whatever floats your boat, but keep the
+                            horizontal 'auto' for this to work */
+    /* whatever else styles you fancy here */
+}
+
+img[src$='#floatleft']
+{
+    float:left;
+    margin: 0.7rem;      /* this margin is totally up to you */
+    /* whatever else styles you fancy here */
+}
+
+img[src$='#floatright']
+{
+    float:right;
+    margin: 0.7rem;      /* this margin is totally up to you */
+    /* whatever else styles you fancy here */
+}
 /* Generated using: hugo gen chromastyles --style=xcode */
 
 /* Background */ html:not(.dark) .bg { background-color:#fff; }

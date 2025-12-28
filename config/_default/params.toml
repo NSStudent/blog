@@ -104,6 +104,8 @@ cardViewScreenWidth = false
 [umamiAnalytics]
 
 [selineAnalytics]
+  token = "c5d833c6f041aef"
+  enableTrackEvent = true
 
 [buymeacoffee]
 

@@ -6,8 +6,10 @@
   unsafe = true
 
 [highlight]
+  codeFences = true
   noClasses = false
   style = "custom"
+  guessSyntax = true
 
 [tableOfContents]
   startLevel = 2
