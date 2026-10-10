@@ -8,6 +8,10 @@ updates:
       interval: weekly
     commit-message:
       prefix: "update blowfish theme"
+    # public/ apunta a NSStudent.github.io, donde el workflow publica en cada
+    # despliegue: no tiene sentido proponer subir su puntero.
+    ignore:
+      - dependency-name: public
 
   - package-ecosystem: github-actions
     directory: /

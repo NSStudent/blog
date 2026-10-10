@@ -30,7 +30,7 @@ check_hugo() {
 ensure_theme() {
   if [ ! -f themes/blowfish/theme.toml ]; then
     info "Descargando el tema (submódulo)…"
-    git submodule update --init --recursive
+    git submodule update --init themes/blowfish
   fi
 }
 
