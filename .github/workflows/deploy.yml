@@ -9,10 +9,12 @@ on:
     - cron: "15 5 * * *"
   workflow_dispatch:
 
+# La web se publica en el repo NSStudent.github.io: es el sitio de usuario, el
+# único cuyo dominio (nsstudent.dev) heredan los demás repos con Pages, como
+# nsstudent.dev/MindChessLanding/. Se sube con una deploy key con escritura en
+# ese repo, guardada aquí como secret PAGES_DEPLOY_KEY.
 permissions:
   contents: read
-  pages: write
-  id-token: write
 
 concurrency:
   group: pages-${{ github.ref }}
@@ -45,11 +47,6 @@ jobs:
           sudo dpkg -i "${{ runner.temp }}/hugo.deb"
           hugo version
 
-      - name: Configure Pages
-        if: github.event_name != 'pull_request'
-        id: pages
-        uses: actions/configure-pages@v6
-
       - name: Build
         run: |
           set -o pipefail
@@ -58,20 +55,47 @@ jobs:
             echo "::warning::Hugo ha mostrado avisos durante la compilación; revisa el log."
           fi
 
-      - name: Upload artifact
-        if: github.event_name != 'pull_request'
-        uses: actions/upload-pages-artifact@v5
-        with:
-          path: ${{ runner.temp }}/site
+      - name: Stamp build
+        run: echo "${{ github.sha }}" > "${{ runner.temp }}/site/build.txt"
 
-  deploy:
-    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
-    needs: build
-    runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v5
+      - name: Publish to NSStudent.github.io
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+        env:
+          DEPLOY_KEY: ${{ secrets.PAGES_DEPLOY_KEY }}
+          SITE: ${{ runner.temp }}/site
+          PAGES: ${{ runner.temp }}/pages
+        run: |
+          eval "$(ssh-agent -s)" >/dev/null
+          ssh-add -q - <<< "$DEPLOY_KEY"
+          echo "github.com ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl" > "$RUNNER_TEMP/known_hosts"
+          export GIT_SSH_COMMAND="ssh -o UserKnownHostsFile=$RUNNER_TEMP/known_hosts"
+
+          git clone -q --depth 1 --branch master git@github.com:NSStudent/NSStudent.github.io.git "$PAGES"
+          rsync -a --delete --exclude .git "$SITE/" "$PAGES/"
+          echo "nsstudent.dev" > "$PAGES/CNAME"
+          touch "$PAGES/.nojekyll"
+
+          cd "$PAGES"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "La web publicada ya está al día."
+            exit 0
+          fi
+          git -c user.name="github-actions[bot]" \
+              -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
+              commit -q -m "deploy NSStudent/blog@$GITHUB_SHA"
+          git push -q origin master
+
+      # GitHub Pages tarda un poco en publicar lo subido; se espera a verlo en la
+      # web para que "./blog publicar" solo diga "Publicado" cuando ya lo está.
+      - name: Wait for nsstudent.dev
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+        run: |
+          for _ in $(seq 60); do
+            if [ "$(curl -fsSL "https://nsstudent.dev/build.txt?t=$RANDOM$RANDOM" 2>/dev/null)" = "$GITHUB_SHA" ]; then
+              echo "Publicado en https://nsstudent.dev"
+              exit 0
+            fi
+            sleep 10
+          done
+          echo "::warning::Subido, pero nsstudent.dev aún no muestra esta versión tras 10 minutos."
