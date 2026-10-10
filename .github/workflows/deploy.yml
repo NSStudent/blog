@@ -27,8 +27,12 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7
         with:
-          submodules: recursive
           fetch-depth: 0
+
+      # Solo el tema: cualquier otro submódulo (p. ej. el antiguo public/) no debe
+      # mezclarse con la salida de la compilación.
+      - name: Checkout theme
+        run: git submodule update --init --depth 1 themes/blowfish
 
       - name: Read Hugo version
         id: hugo
@@ -49,7 +53,7 @@ jobs:
       - name: Build
         run: |
           set -o pipefail
-          hugo build --gc --minify --environment production --logLevel warn 2>&1 | tee build.log
+          hugo build --gc --minify --environment production --logLevel warn --destination "${{ runner.temp }}/site" 2>&1 | tee build.log
           if grep -qE '^WARN' build.log; then
             echo "::warning::Hugo ha mostrado avisos durante la compilación; revisa el log."
           fi
@@ -58,7 +62,7 @@ jobs:
         if: github.event_name != 'pull_request'
         uses: actions/upload-pages-artifact@v5
         with:
-          path: ./public
+          path: ${{ runner.temp }}/site
 
   deploy:
     if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
