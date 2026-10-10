@@ -1,10 +1,12 @@
 disabled = false
-languageCode = "es"
+locale = "es"
+label = "Español"
 weight = 1
 title = "NSStudent blog"
 
 [params]
 displayName = "Español"
+isoCode = "es"
 logo = "img/icon45.png"
 secondaryLogo = "img/icon45dark.png"
 description = "Blog personal"

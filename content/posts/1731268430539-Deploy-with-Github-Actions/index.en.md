@@ -1,6 +1,5 @@
 ---
 title: "Deploy Publish blog with Github Actions"
-lang: en
 date: 2024-11-10
 draft: false
 description: "Use GitHub deploy method and Github Actions to deploy in your server."

@@ -1,6 +1,5 @@
 ---
 title: "Create a custom struct initializer"
-lang: en
 date: 2020-11-11
 draft: false
 description: "Add a custom initializer for structs"

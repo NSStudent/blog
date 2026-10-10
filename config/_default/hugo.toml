@@ -1,4 +1,5 @@
 theme = "blowfish"
+title = "NSStudent"
 defaultContentLanguage = "es"
 enableRobotsTXT = true
 summaryLength = 0
