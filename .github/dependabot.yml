@@ -1,0 +1,15 @@
+version: 2
+updates:
+  # Abre una PR cuando sale una versión nueva de Blowfish. El workflow
+  # Deploy compila la PR, así que se ve si rompe algo antes de aceptarla.
+  - package-ecosystem: gitsubmodule
+    directory: /
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: "update blowfish theme"
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly

@@ -1,0 +1,4 @@
+# Configuración solo para `hugo server` (entorno "development").
+# Se escribe en public-dev/ para que el servidor local nunca toque la
+# salida de producción, aunque lo lance blowfish-tools u otra herramienta.
+publishDir = "public-dev"

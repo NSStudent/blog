@@ -1,7 +1,6 @@
 ---
+title: "About me"
 ---
-
-# About me
 
 Hi, everyone!
 

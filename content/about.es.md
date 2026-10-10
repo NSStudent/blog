@@ -1,8 +1,7 @@
 ---
+title: "Sobre mí"
 layout: hero
 ---
-
-# Sobre mí
 
 Hola a todos
 
