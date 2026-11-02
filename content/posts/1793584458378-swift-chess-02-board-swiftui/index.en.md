@@ -206,7 +206,7 @@ After the post went out, a reader left this reply on X:
 
 Spot on, and it's exactly the split the change above was after. The offset lives in the view's `@State`, but dropping a piece (`userEndDragging`) and tapping a legal-move dot (`legalTargetTapped`) both end in the same `play` function, the only place a move reaches the game, and always after `isLegal`. When the board supports keyboard and VoiceOver, those inputs will have to send the same actions; that's a topic for another post.
 
-Where the note really landed was the canceled drag. If you released the piece outside the board, `target` was `nil` and nothing was sent. The game didn't change, but `selectedSquare` and `draggedSquare` stayed set and the highlight stuck on screen. Now the gesture reports the cancel too, and the board clears the selection:
+The canceled drag is the part I didn't tell. In MindChess, if you release the piece outside the board, the selection clears and the game and its history stay the same. But the post didn't explain it, and the simplified sample code had left it out: with `target` set to `nil` nothing was sent, so `selectedSquare` and `draggedSquare` stayed set and the highlight stuck on screen. This is how the app handles it, and now the sample does too: the gesture reports the cancel and the board clears the selection.
 
 ```swift {hl_lines=[3]}
 // PiecesFeature.Action.Delegate

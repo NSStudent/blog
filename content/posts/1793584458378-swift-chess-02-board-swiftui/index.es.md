@@ -212,7 +212,7 @@ Guarda la posición del puntero en local, pero manda la jugada terminada por la 
 
 Tiene toda la razón, y es justo la separación que buscaba el cambio de arriba. El desplazamiento vive en el `@State` de la vista, pero soltar una pieza (`userEndDragging`) y tocar el punto de una jugada legal (`legalTargetTapped`) acaban en la misma función, `play`, que es el único sitio donde una jugada llega a la partida y siempre después de `isLegal`. Cuando el tablero sea accesible con teclado y VoiceOver, esas entradas tendrán que mandar las mismas acciones; eso da para otro artículo.
 
-Donde sí acertó de lleno fue en el arrastre cancelado. Si soltabas la pieza fuera del tablero, `target` era `nil` y no se mandaba nada. La partida no cambiaba, pero `selectedSquare` y `draggedSquare` se quedaban puestos y el resaltado seguía en pantalla. Ahora el gesto también avisa cuando se cancela, y el tablero limpia la selección:
+El arrastre cancelado es lo que no conté. En MindChess, si sueltas la pieza fuera del tablero, la selección se limpia y la partida y el historial quedan igual. Pero el artículo no lo explicaba, y el código de ejemplo, al simplificarlo, se lo había dejado: con `target` a `nil` no se mandaba nada, así que `selectedSquare` y `draggedSquare` se quedaban puestos y el resaltado seguía en pantalla. Así lo resuelve la app, y así está ahora también el ejemplo: el gesto avisa cuando se cancela y el tablero limpia la selección.
 
 ```swift {hl_lines=[3]}
 // PiecesFeature.Action.Delegate
