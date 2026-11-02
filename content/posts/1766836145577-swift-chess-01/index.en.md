@@ -5,6 +5,8 @@ draft: false
 layout: simple
 # imagePosition: 50% 50%;
 description: "In this article we dive into one of the fundamental concepts of any modern chess engine or library: bitboards."
+series: ["Swift Chess"]
+series_order: 1
 tags: ["swift", "chess", "bitboard"]
 ---
 

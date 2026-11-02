@@ -5,6 +5,8 @@ draft: false
 layout: simple
 # imagePosition: 50% 50%;
 description: "En este artículo vamos a entrar en uno de los conceptos fundamentales de cualquier motor o librería de ajedrez moderna: los bitboards."
+series: ["Swift Chess"]
+series_order: 1
 tags: ["swift", "ajedrez", "bitboard"]
 ---
 
