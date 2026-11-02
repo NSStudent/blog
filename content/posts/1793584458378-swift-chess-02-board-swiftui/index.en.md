@@ -198,6 +198,40 @@ withTransaction(transaction) {
 }
 ```
 
+### A reader's note
+
+After the post went out, a reader left this reply on X:
+
+{{< x user="onlyapps_org" id="2117241364564017475" >}}
+
+Spot on, and it's exactly the split the change above was after. The offset lives in the view's `@State`, but dropping a piece (`userEndDragging`) and tapping a legal-move dot (`legalTargetTapped`) both end in the same `play` function, the only place a move reaches the game, and always after `isLegal`. When the board supports keyboard and VoiceOver, those inputs will have to send the same actions; that's a topic for another post.
+
+Where the note really landed was the canceled drag. If you released the piece outside the board, `target` was `nil` and nothing was sent. The game didn't change, but `selectedSquare` and `draggedSquare` stayed set and the highlight stuck on screen. Now the gesture reports the cancel too, and the board clears the selection:
+
+```swift {hl_lines=[3]}
+// PiecesFeature.Action.Delegate
+case userEndDragging(on: Square)
+case userCancelDragging
+```
+
+```swift {hl_lines=["4-5"]}
+// DragGesture.onEnded
+if let target {
+    store.send(.delegate(.userEndDragging(on: target)))
+} else {
+    store.send(.delegate(.userCancelDragging))
+}
+```
+
+```swift
+// BoardFeature
+case .pieces(.delegate(.userCancelDragging)):
+    state.clearSelection()
+    return .none
+```
+
+Thanks for reading it so carefully: that's how these posts get better.
+
 ## Board State and Action in TCA
 
 With the layers settled: what goes in the store, and what doesn't? My rule is: **`State` holds what decides what gets drawn; the view holds what only describes how the gesture looks**.

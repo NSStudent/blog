@@ -198,6 +198,46 @@ withTransaction(transaction) {
 }
 ```
 
+### Lo que me señaló un lector
+
+Al publicar el artículo, un lector me dejó este comentario en X:
+
+{{< x user="onlyapps_org" id="2117241364564017475" >}}
+
+Traducido al español:
+
+{{< lead >}}
+Guarda la posición del puntero en local, pero manda la jugada terminada por la misma comprobación de legalidad que el toque, el teclado y VoiceOver. Un arrastre cancelado no debe cambiar ni el tablero ni el historial. Si no, el ratón acaba siendo un segundo motor de reglas.
+{{< /lead >}}
+
+Tiene toda la razón, y es justo la separación que buscaba el cambio de arriba. El desplazamiento vive en el `@State` de la vista, pero soltar una pieza (`userEndDragging`) y tocar el punto de una jugada legal (`legalTargetTapped`) acaban en la misma función, `play`, que es el único sitio donde una jugada llega a la partida y siempre después de `isLegal`. Cuando el tablero sea accesible con teclado y VoiceOver, esas entradas tendrán que mandar las mismas acciones; eso da para otro artículo.
+
+Donde sí acertó de lleno fue en el arrastre cancelado. Si soltabas la pieza fuera del tablero, `target` era `nil` y no se mandaba nada. La partida no cambiaba, pero `selectedSquare` y `draggedSquare` se quedaban puestos y el resaltado seguía en pantalla. Ahora el gesto también avisa cuando se cancela, y el tablero limpia la selección:
+
+```swift {hl_lines=[3]}
+// PiecesFeature.Action.Delegate
+case userEndDragging(on: Square)
+case userCancelDragging
+```
+
+```swift {hl_lines=["4-5"]}
+// DragGesture.onEnded
+if let target {
+    store.send(.delegate(.userEndDragging(on: target)))
+} else {
+    store.send(.delegate(.userCancelDragging))
+}
+```
+
+```swift
+// BoardFeature
+case .pieces(.delegate(.userCancelDragging)):
+    state.clearSelection()
+    return .none
+```
+
+Gracias por leerlo con tanto cuidado: así es como estos artículos mejoran.
+
 ## El State y las Action del tablero en TCA
 
 Con las capas claras, ¿qué guarda el store y qué no? La regla que sigo es: **en el `State` va lo que decide qué se dibuja; en la vista, lo que solo dice cómo se ve el gesto**.
