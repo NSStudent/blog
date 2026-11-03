@@ -22,6 +22,8 @@ The board shows up almost everywhere in MindChess: puzzles, repertoire, the game
 
 The code here is a rewritten, trimmed-down version of what the app uses. Both complete files are linked at the end.
 
+{{< promo "mindchess" >}}
+
 ## One geometry function
 
 Before any layers, one rule: **everything drawn on the board is placed with the same function**. Squares, pieces, highlights, legal-move dots, arrows. If each layer did its own math, sooner or later one would drift by half a pixel, especially once you flip the board.

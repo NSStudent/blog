@@ -22,6 +22,8 @@ En MindChess el tablero aparece casi en todas partes: ejercicios, repertorio, vi
 
 El código de este artículo es una versión reescrita y reducida de la de la app. Los dos archivos completos están al final.
 
+{{< promo "mindchess" >}}
+
 ## Una sola función de geometría
 
 Antes de hablar de capas hace falta una regla: **todo lo que se dibuja sobre el tablero se coloca con la misma función**. Casillas, piezas, resaltados, puntos de jugadas legales, flechas… Si cada capa hiciera su propia cuenta, tarde o temprano una se desalinearía medio píxel, sobre todo al girar el tablero.

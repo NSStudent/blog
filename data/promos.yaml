@@ -1,0 +1,20 @@
+# Banners para {{< promo "<id>" >}} dentro de un post.
+# Textos y enlaces por idioma (es / en). El icono va en assets/; badge es el idioma
+# de la insignia oficial de la App Store (assets/img/promos/badges/).
+mindchess:
+  name: MindChess
+  icon: img/promos/mindchess.png
+  es:
+    tagline: "El tablero de este artículo, en tu iPhone"
+    text: "Entrena visión, memoria y cálculo en ejercicios de 60 segundos, resuelve táctica y estudia tus propias partidas."
+    url: "https://mindchess.app/es/"
+    store: "https://apps.apple.com/es/app/mindchess/id6745103930"
+    badge: es-es
+    button: "Descárgala en la App Store"
+  en:
+    tagline: "The board from this post, on your iPhone"
+    text: "Train board vision, memory and calculation in 60-second drills, sharpen your tactics and study your own games."
+    url: "https://mindchess.app/"
+    store: "https://apps.apple.com/app/id6745103930"
+    badge: en-us
+    button: "Download on the App Store"

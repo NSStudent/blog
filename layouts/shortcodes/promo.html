@@ -1,0 +1,32 @@
+{{- /* Banner de una app o proyecto, definido en data/promos.yaml.
+     Uso: {{< promo "mindchess" >}} o {{< promo id="mindchess" tagline="…" >}} */ -}}
+{{- $id := .Get "id" | default (.Get 0) -}}
+{{- $promo := index hugo.Data.promos $id -}}
+{{- if not $promo -}}
+  {{- errorf "promo: no hay ningún banner %q en data/promos.yaml (%s)" $id .Position -}}
+{{- end -}}
+{{- $t := index $promo .Page.Language.Lang | default (index $promo "en") -}}
+{{- $tagline := .Get "tagline" | default $t.tagline -}}
+{{- $text := .Get "text" | default $t.text -}}
+<aside class="promo not-prose" aria-label="{{ $promo.name }}">
+  {{- with resources.Get $promo.icon }}
+  {{- $icon := .Resize "128x webp" }}
+  <a class="promo-icon" href="{{ $t.url }}" tabindex="-1" aria-hidden="true">
+    <img src="{{ $icon.RelPermalink }}" width="64" height="64" alt="" loading="lazy">
+  </a>
+  {{- end }}
+  <div class="promo-body">
+    <p class="promo-title"><a href="{{ $t.url }}">{{ $promo.name }}</a>{{ with $tagline }}<span>{{ . }}</span>{{ end }}</p>
+    {{- with $text }}
+    <p class="promo-text">{{ . }}</p>
+    {{- end }}
+  </div>
+  {{- $badge := $t.badge | default "en-us" }}
+  <a class="promo-store" href="{{ $t.store }}" rel="noopener">
+    {{- range $color := slice "black" "white" }}
+    {{- with resources.Get (printf "img/promos/badges/appstore-%s-%s.svg" $color $badge) }}
+    <img class="promo-badge-{{ $color }}" src="{{ .RelPermalink }}" width="120" height="40" alt="{{ $t.button }}">
+    {{- end }}
+    {{- end }}
+  </a>
+</aside>
