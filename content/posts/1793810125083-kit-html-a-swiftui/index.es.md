@@ -9,7 +9,7 @@ tags: ["swiftui", "design system", "ia", "mindchess"]
 showTableOfContents: true
 ---
 
-<!-- Borrador 2026-11-04 en la rama drafts/kit-y-animaciones. Pendiente: revisar cifras y nombres con el kit (CCoach-minchess-migration), capturas reales del kit y de la app, versión en inglés. -->
+<!-- Borrador 2026-11-04 en la rama drafts/kit-y-animaciones. Cifras revisadas con el kit (CCoach-minchess-migration) el 4 nov; capturas sacadas del kit y de la app. -->
 
 MindChess es una app de ajedrez para iPhone, iPad, el iPhone Duo y Mac, y la hago yo solo. Con tantos tamaños de pantalla, el riesgo no es tardar en programar: es acabar con una app distinta en cada dispositivo, porque cada pantalla se decidió con prisa el día que tocaba escribirla.
 
@@ -60,18 +60,24 @@ extension CGFloat {
 .a-btn { height: calc(var(--g) * 11); border-radius: calc(var(--g) * 3); }
 ```
 
+En el kit, la página de tokens enseña esos mismos primitivos con su nombre de Swift y los semánticos en claro y oscuro:
+
+![Página de tokens del kit: los colores primitivos de Color+Root.swift (athensGray, ebonyClay, ebony, dodgerBlue…) con su valor hexadecimal, y debajo los tonos de la web](kit-tokens.jpg "La página de tokens del kit. Los nombres son los de Color+Root.swift.")
+
 Cuando el kit dice «padding de `grid(3)`», en SwiftUI escribo `.padding(.grid(3))` y sale exactamente lo mismo. Kit y app comparten números, así que no hay que medir nada.
 
-## Átomos, celdas, composiciones y pantallas
+## Átomos, moléculas, organismos y vistas
 
-El kit sigue una versión de *atomic design* con cuatro niveles:
+El kit sigue *atomic design* al pie de la letra. En la versión 2.0 del sistema hay **327 fichas** repartidas en cuatro niveles:
 
-- **Átomos:** texto, iconos, botones, píldoras de estado, miniaturas de tablero.
-- **Celdas:** átomos juntos con un padding de la rejilla. Una fila de repaso es miniatura + título + subtítulo + píldora.
-- **Composiciones:** celdas agrupadas en tarjetas y secciones.
-- **Pantallas:** composiciones con datos de verdad.
+- **Átomos (61):** la pieza más pequeña con sentido propio. Un glifo, una cifra grande, una píldora de estado, una miniatura de tablero.
+- **Moléculas (116):** átomos unidos con una tarea concreta. Una fila de repaso es miniatura + título + subtítulo + píldora.
+- **Organismos (120):** bloques de pantalla hechos de moléculas, como la tarjeta de repaso, el reloj o el contenedor de dos paneles del Duo.
+- **Vistas (30):** organismos con datos de verdad, que ya son una pantalla.
 
-La demo de abajo es una versión muy reducida del kit, hecha con la misma idea. Recorre los niveles, cambia entre claro y oscuro y prueba la pantalla en el iPhone y en las dos posturas plegadas del iPhone Duo:
+![Sección «Diseño atómico» del kit: tres columnas con los 61 átomos, las 116 moléculas y los 120 organismos, cada uno como una etiqueta con su nombre](kit-atomic.jpg "El índice del sistema de diseño 2.0: cada etiqueta abre su ficha.")
+
+La demo de abajo es una versión muy reducida del kit, hecha con la misma idea (con nombres más sencillos: celdas y composiciones en vez de moléculas y organismos). Recorre los niveles, cambia entre claro y oscuro y prueba la pantalla en el iPhone y en las dos posturas plegadas del iPhone Duo:
 
 {{< demo src="/demos/kit-explorer/" height="760" title="Del token a la pantalla: una versión reducida del kit de MindChess" >}}
 
@@ -95,7 +101,7 @@ const screens = {
 };
 ```
 
-Como el esquema de color es un parámetro, cada pantalla sale en claro y en oscuro sin hacer nada más. Antes de escribir el Swift de la versión 1.3 ya había **156 pantallas** en el kit, en los dos esquemas.
+Como el esquema de color es un parámetro, cada pantalla sale en claro y en oscuro sin hacer nada más. Antes de escribir el Swift de la versión 1.3 ya había **156 pantallas** en el kit, en los dos esquemas. Hoy, solo el kit de iPhone tiene 279.
 
 Lo importante es que estas funciones las escribe un agente de IA. Mi trabajo es decir qué tiene que pasar en la pantalla, revisar lo que sale y decidir.
 
@@ -110,15 +116,19 @@ Hoy C, Partidas D, and Tú and Ajustes B (kit Decisiones › 9–11)
 Reto B, Reloj B, GIF D and Novedades A (kit Decisiones › 12–16)
 ```
 
+Así es una de esas decisiones en el kit: la tarjeta de repaso de Hoy, con tres variantes en claro y en oscuro, con repasos pendientes y sin ellos. Ganó la C:
+
+![Decisión 6 del kit, «Tarjeta de repaso»: tres variantes (A, tarjeta siempre; B, fila compacta siempre; C, tarjeta cuando vence algo y fila cuando no), cada una en dos iPhone, con la C marcada como decidida el 18 de octubre](kit-decision.jpg "Decisión 6: las variantes una al lado de otra y la elegida, con su motivo.")
+
 Meses después, cuando vuelvo a una pantalla, el kit me dice qué se descartó y por qué.
 
 ## Fichas de componente, no dibujos
 
-Un componente del sistema de diseño no es una imagen, es una **ficha**. Hay 197, y cada una tiene:
+Un componente del sistema de diseño no es una imagen, es una **ficha**. Cada una tiene:
 
 1. **Para qué sirve:** cuándo usarlo, cuándo no y las pantallas exactas que lo usan.
 2. **Anatomía y tokens.** El reloj de ajedrez, por ejemplo, usa el acento mientras corre, naranja por debajo de 60 s, rojo por debajo de 10 s y su propio color cuando cae la bandera.
-3. **Variantes, estados y máquina de estados.** El reloj pasa por *setup → ready → running → paused → flagged → finished*. 119 componentes tienen su máquina de estados simulable en el kit.
+3. **Variantes, estados y máquina de estados.** El reloj pasa por *setup → ready → running → paused → flagged → finished*. 118 componentes tienen su máquina de estados simulable en el kit.
 4. **La parte de SwiftUI:** propiedades, eventos y, en 47 componentes, el contrato de TCA (acciones de vista, internas y delegadas).
 5. **Accesibilidad, notas de la HIG y los tests que tiene que pasar.**
 
@@ -134,7 +144,13 @@ Una pantalla de iPhone no sirve tal cual en el Duo abierto: la bisagra parte la 
 
 Pruébalo en la demo con «Duo libro» y «Duo tabletop»: la misma función `render` recibe la geometría y coloca las composiciones a cada lado.
 
-Y como todo es código, también se revisa con código. Un script recorre **156 pantallas × 20 layouts = 3.120 combinaciones** y busca desbordes, contenido cortado, controles junto a la bisagra o mitades vacías en tabletop. Antes de la 1.3 salía con 0 errores.
+Y así queda en la app de verdad. El reloj de ajedrez, con el Duo abierto en plano, pone un jugador en cada mitad y los controles en una cápsula entre las dos. En libro, con la pantalla doblada, esa cápsula se aparta de la bisagra:
+
+![Captura de MindChess en el iPhone Duo abierto: el reloj de ajedrez con 5:00 para blancas en la mitad izquierda, 5:00 para negras en la derecha y una cápsula con ajustes, 5 + 3 y cerrar en el centro](app-duo-clock.jpg "El reloj en el Duo abierto: un jugador por mitad.")
+
+Y como todo es código, también se revisa con código. Un script recorre **156 pantallas × 20 layouts = 3.120 combinaciones** y busca desbordes, contenido cortado, controles junto a la bisagra o mitades vacías en tabletop. Antes de la 1.3 salía con 0 errores. Hoy, solo para el Duo, son 2.570 combinaciones, y la página de QA sigue en cero:
+
+![Página de QA del kit para el iPhone Duo: 2570 combinaciones, 0 errores, 0 desbordes y el autotest con cada chequeo (TTUP, TTCLIP, BAND, BANDNEAR…) en verde](kit-qa-duo.jpg "La QA del Duo: cada chequeo tiene nombre y tiene que estar a cero.")
 
 ## Del kit a SwiftUI
 
@@ -155,6 +171,10 @@ Con la pantalla decidida, el paso a SwiftUI es casi mecánico, porque todo lo qu
 - **Las reglas se citan por su número.** El layout del Duo empieza con un comentario que dice que implementa la decisión D28, y en qué archivo del kit está la geometría.
 - **Algunas tablas se comparan con tests.** La barra de menús del Mac sale de una tabla de comandos que es espejo de la del kit, y un test comprueba que los identificadores, el orden y los atajos coinciden.
 - **Los snapshots se comparan con el kit.** Cada pantalla tiene snapshots en iPhone y en cada postura del Duo, y se revisan al lado de la pantalla del kit.
+
+El kit también comprueba lo contrario: que una pantalla nueva se pueda montar **solo con piezas del sistema**. La página «Pantallas» pone cada captura de la app al lado de su versión 2.0 hecha con fichas, y marca como hueco cualquier cosa visible que no esté dentro de una pieza:
+
+![Página «Pantallas de la app en legos»: 69 pantallas, 30 que cambian en 2.0, 0 con huecos; debajo, la pestaña Estudio montada con piezas y la lista de las 20 fichas que usa](kit-legos.jpg "Cada pantalla, con las fichas que la componen. Cero huecos.")
 
 Para la implementación también uso agentes. Les paso la pantalla del kit, la ficha de los componentes que usa y el número de la decisión, y el resultado se parece mucho más a lo que quiero que si les pido «hazme una pantalla de Hoy».
 

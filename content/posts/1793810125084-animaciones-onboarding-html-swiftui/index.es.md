@@ -9,7 +9,7 @@ tags: ["swiftui", "animaciones", "canvas", "ia", "mindchess"]
 showTableOfContents: true
 ---
 
-<!-- Borrador 2026-11-04 en la rama drafts/kit-y-animaciones. Pendiente: cotejar con motion.js del kit, GIF o vídeo de las escenas reales de la app, versión en inglés. -->
+<!-- Borrador 2026-11-04 en la rama drafts/kit-y-animaciones. Cotejado con design-iphone/assets/motion.js el 4 nov; fotogramas sacados del kit. Pendiente: GIF o vídeo de la escena en la app. -->
 
 El onboarding y la pantalla de Novedades de MindChess tienen pequeñas escenas animadas: diez monedas que caen en un anillo y se funden en una insignia, un tablero de papel que se endereza y se convierte en el de la app, tres rivales de los que eliges uno y te responde 1…e5.
 
@@ -51,6 +51,10 @@ Y todas siguen la misma gramática: **entrada → acción → resultado → repo
 | Reposo | 4,4 s | El fotograma quieto: la insignia y «10/10» |
 
 El fotograma de reposo (`stillTime`) es el que se pinta con Reduce Motion y en los snapshots, así que tiene que contar la historia él solo.
+
+Estos son cinco fotogramas de la escena del kit, pintados con `draw(t)` en cinco instantes. El último es el de reposo:
+
+![Cinco fotogramas de la escena de las monedas: a 0,45 s el anillo vacío y la primera moneda cayendo (0/10); a 1,1 s cuatro monedas (4/10); a 2 s ocho (8/10); a 3,05 s el anillo se funde alrededor de la insignia (10/10); a 4,4 s la insignia ganada (10/10)](coins-frames.png "La misma función en cinco instantes. A 4,4 s, el fotograma quieto.")
 
 ## Paso 3: curvas en forma cerrada
 
@@ -102,7 +106,11 @@ En la demo de arriba puedes cambiar la amortiguación y la frecuencia y ver cóm
 
 ## Paso 4: prototipar en el navegador con IA
 
-El prototipo vive en el kit de diseño, en un archivo de escenas en JavaScript. Cada escena es una función que recibe el contexto de un `<canvas>` y `t`. Escribirlas con un agente de IA funciona especialmente bien, por tres motivos:
+El prototipo vive en el kit de diseño, en un archivo de escenas en JavaScript (`motion.js`). Hoy tiene catorce escenas, y la página del kit las enseña todas a la vez, en oscuro y en claro, con su duración y dónde se usa cada una:
+
+![Página «Escenas animadas» del kit: una rejilla de escenas (Encuentra tu rival, Entrena tu táctica, Trae tus partidas, Monedas → insignia, Tu gimnasio diario…), cada una en oscuro y en claro con su nombre y duración](motion-catalog.jpg "El catálogo de escenas del kit. Con ?motion=still se pintan todas en su fotograma quieto.")
+
+Cada escena es una función que recibe el contexto de un `<canvas>` y `t`. Escribirlas con un agente de IA funciona especialmente bien, por tres motivos:
 
 1. **La descripción en lenguaje natural ya es casi el código.** «Diez monedas en un anillo de radio 88; cae una cada 0,2 s desde 64 pt más arriba con un muelle de frecuencia 16» se traduce casi literalmente.
 2. **Se itera mirando el navegador.** Recargo, arrastro el tiempo hasta el momento que no me gusta y le digo al agente qué cambiar en ese segundo concreto.

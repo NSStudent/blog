@@ -1,0 +1,203 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Coin scene · draw(t)</title>
+<style>
+  :root { --bg:#ffffff; --surface:#E5E7EB; --skeleton:#D1D5DB; --text:#111827; --text2:#6B7280; --accent:#3B82F6; --gold:#DEBA13; --line:#D1D5DB; }
+  :root[data-theme="dark"] { --bg:#111827; --surface:#1F2937; --skeleton:#374151; --text:#ffffff; --text2:#9CA3AF; --line:#374151; }
+  * { box-sizing:border-box; }
+  html, body { margin:0; background:var(--bg); color:var(--text); font:14px/1.4 -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif; }
+  .wrap { display:grid; grid-template-columns: 1.3fr 1fr; gap:16px; padding:12px; }
+  @media (max-width: 640px) { .wrap { grid-template-columns: 1fr; } }
+  .card { background:var(--surface); border-radius:14px; padding:12px; }
+  h2 { font-size:13px; text-transform:uppercase; letter-spacing:.06em; color:var(--text2); margin:0 0 8px; }
+  canvas { width:100%; display:block; border-radius:10px; background:var(--bg); }
+  .row { display:flex; align-items:center; gap:8px; margin-top:8px; flex-wrap:wrap; }
+  .row label { color:var(--text2); min-width:84px; }
+  input[type=range] { flex:1; accent-color:var(--accent); min-width:120px; }
+  button { background:var(--accent); color:#fff; border:0; border-radius:8px; padding:6px 12px; font:inherit; font-weight:600; cursor:pointer; }
+  button.ghost { background:transparent; color:var(--accent); border:1.5px solid var(--accent); }
+  button[aria-pressed="true"].ghost { background:var(--accent); color:#fff; }
+  .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size:12px; color:var(--text2); }
+  .val { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; min-width:52px; text-align:right; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <section class="card">
+    <h2>The scene: a function of t</h2>
+    <canvas id="scene" width="720" height="560" aria-label="Ten coins drop into a ring and fuse into a badge"></canvas>
+    <div class="row">
+      <button id="play">Pause</button>
+      <button id="still" class="ghost" aria-pressed="false">Reduce Motion</button>
+      <span class="mono" id="state"></span>
+    </div>
+    <div class="row">
+      <label for="t">t</label>
+      <input id="t" type="range" min="0" max="6" step="0.01" value="0">
+      <span class="val" id="tval">0.00 s</span>
+    </div>
+    <div class="row">
+      <label for="speed">speed</label>
+      <input id="speed" type="range" min="0.25" max="2" step="0.05" value="1">
+      <span class="val" id="speedval">1.00×</span>
+    </div>
+  </section>
+  <section class="card">
+    <h2>The spring: spring(x, w)</h2>
+    <canvas id="curve" width="560" height="360" aria-label="Damped spring curve"></canvas>
+    <div class="row">
+      <label for="z">damping</label>
+      <input id="z" type="range" min="0.2" max="1" step="0.01" value="0.78">
+      <span class="val" id="zval">0.78</span>
+    </div>
+    <div class="row">
+      <label for="w">frequency w</label>
+      <input id="w" type="range" min="4" max="30" step="0.5" value="16">
+      <span class="val" id="wval">16</span>
+    </div>
+    <p class="mono">The app uses a fixed 0.78. The coins use w = 16; the badge, 10. Move the sliders and watch how the coins' drop changes.</p>
+  </section>
+</div>
+<script>
+// ---- Closed-form curves (the same as Motion in MotionKit.swift) ----
+let Z = 0.78, W_COIN = 16;
+function spring(x, w = 14, z = Z) {
+  if (x <= 0) return 0;
+  if (z >= 0.999) { const e = Math.exp(-w * x); return 1 - e * (1 + w * x); }
+  const wd = w * Math.sqrt(1 - z * z), e = Math.exp(-z * w * x);
+  return 1 - e * (Math.cos(wd * x) + (z * w / wd) * Math.sin(wd * x));
+}
+const clamp = (v, a = 0, b = 1) => Math.min(b, Math.max(a, v));
+function smooth(a, b, x) { const u = clamp((x - a) / (b - a)); return u * u * (3 - 2 * u); }
+const lerp = (a, b, k) => a + (b - a) * k;
+function bump(t, c, len = 0.14, w = 30) { return spring(t - c, w) - spring(t - c - len, w); }
+
+// ---- The scene ----
+const scene = { duration: 6, stillTime: 4.4, box: { w: 360, h: 280 } };
+function css(name) { return getComputedStyle(document.documentElement).getPropertyValue(name).trim(); }
+
+function drawMedal(ctx, size, earned) {
+  const r = size / 2;
+  ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2);
+  ctx.fillStyle = earned ? css("--accent") : css("--skeleton"); ctx.fill();
+  ctx.beginPath(); ctx.arc(0, 0, r * 0.74, 0, Math.PI * 2);
+  ctx.fillStyle = earned ? "#ffffff" : css("--surface"); ctx.globalAlpha *= earned ? 0.22 : 1; ctx.fill(); ctx.globalAlpha /= earned ? 0.22 : 1;
+  // a very simple knight: an L of squares
+  ctx.fillStyle = earned ? "#ffffff" : css("--text2");
+  const s = r * 0.22;
+  [[-1, -1.5], [-1, -0.5], [-1, 0.5], [0, 0.5]].forEach(([x, y]) => ctx.fillRect(x * s, y * s, s * 0.9, s * 0.9));
+}
+
+function draw(ctx, t) {
+  const cx = 180, cy = 124, r = 88, forge = 2.75, accent = css("--accent");
+  ctx.save();
+  ctx.globalAlpha = smooth(0, 0.25, t) * (1 - smooth(5.4, 5.9, t));
+  const melt = smooth(forge, forge + 0.3, t);
+  let landed = 0;
+  for (let i = 0; i < 10; i++) {
+    const a = -Math.PI / 2 + i * 2 * Math.PI / 10;
+    const p = { x: cx + r * Math.cos(a), y: cy + r * Math.sin(a) };
+    ctx.save(); ctx.globalAlpha *= clamp(1 - melt);
+    ctx.beginPath(); ctx.arc(p.x, p.y, 12, 0, Math.PI * 2); ctx.strokeStyle = css("--skeleton"); ctx.lineWidth = 2; ctx.stroke();
+    ctx.restore();
+    const ti = 0.35 + i * 0.2, k = spring(t - ti, W_COIN);
+    if (t <= ti) continue;
+    if (k > 0.6) landed++;
+    ctx.save(); ctx.globalAlpha *= clamp((t - ti) * 6) * clamp(1 - melt);
+    const y = lerp(p.y - 64, p.y, k);
+    ctx.beginPath(); ctx.arc(p.x, y, 10.5, 0, Math.PI * 2); ctx.fillStyle = accent; ctx.fill();
+    ctx.beginPath(); ctx.arc(p.x - 3, y - 3, 3.2, 0, Math.PI * 2); ctx.fillStyle = "rgba(255,255,255,.45)"; ctx.fill();
+    ctx.restore();
+  }
+  if (t > forge) {
+    const k = spring(t - forge, 10);
+    ctx.save(); ctx.globalAlpha *= clamp(1 - smooth(forge + 0.45, forge + 0.75, t));
+    ctx.beginPath(); ctx.arc(cx, cy, Math.max(0, lerp(r, 54, k)), 0, Math.PI * 2);
+    ctx.strokeStyle = accent; ctx.lineWidth = lerp(5, 14, k); ctx.stroke();
+    ctx.restore();
+  }
+  const flip = clamp((t - (forge + 0.4)) / 0.3), earned = flip >= 0.5;
+  const sx = Math.max(0.001, Math.abs(Math.cos(Math.PI * flip)));
+  const size = 112 * (1 + 0.14 * bump(t, forge + 0.7, 0.25, 22));
+  ctx.save(); ctx.translate(cx, cy); ctx.scale(sx, 1); drawMedal(ctx, size, earned); ctx.restore();
+  if (t > forge + 0.7) {
+    const k = clamp((t - forge - 0.7) / 0.55);
+    ctx.save(); ctx.globalAlpha *= 1 - k; ctx.strokeStyle = css("--gold"); ctx.lineWidth = 3; ctx.lineCap = "round";
+    for (let i = 0; i < 8; i++) {
+      const a = i * Math.PI / 4 + 0.39, r0 = 62 + 18 * k, r1 = r0 + 14 * (1 - k * 0.6);
+      ctx.beginPath(); ctx.moveTo(cx + r0 * Math.cos(a), cy + r0 * Math.sin(a)); ctx.lineTo(cx + r1 * Math.cos(a), cy + r1 * Math.sin(a)); ctx.stroke();
+    }
+    ctx.restore();
+  }
+  const n = t > forge ? 10 : landed;
+  ctx.fillStyle = t > forge ? accent : css("--text2");
+  ctx.font = "600 17px -apple-system, system-ui, sans-serif"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+  ctx.fillText(n + "/10", cx, cy + r + 38);
+  ctx.restore();
+}
+
+// ---- Playback: like MotionSceneView ----
+const sc = document.getElementById("scene"), sctx = sc.getContext("2d");
+const tInput = document.getElementById("t"), tval = document.getElementById("tval");
+const playBtn = document.getElementById("play"), stillBtn = document.getElementById("still"), stateEl = document.getElementById("state");
+const speedInput = document.getElementById("speed"), speedval = document.getElementById("speedval");
+let playing = true, reduceMotion = false, t = 0, last = performance.now(), speed = 1;
+
+function render() {
+  const s = Math.min(sc.width / scene.box.w, sc.height / scene.box.h);
+  sctx.setTransform(1, 0, 0, 1, 0, 0);
+  sctx.clearRect(0, 0, sc.width, sc.height);
+  sctx.translate((sc.width - scene.box.w * s) / 2, (sc.height - scene.box.h * s) / 2);
+  sctx.scale(s, s);
+  const time = reduceMotion ? scene.stillTime : t;
+  draw(sctx, time);
+  tInput.value = time; tval.textContent = time.toFixed(2) + " s";
+  stateEl.textContent = reduceMotion ? "still frame (stillTime = 4.4 s)" : playing ? "playing" : "paused: drag t";
+  drawCurve(time);
+}
+function tick(now) {
+  const dt = (now - last) / 1000; last = now;
+  if (playing && !reduceMotion) { t = (t + dt * speed) % scene.duration; render(); }
+  requestAnimationFrame(tick);
+}
+playBtn.onclick = () => { playing = !playing; playBtn.textContent = playing ? "Pause" : "Play"; render(); };
+stillBtn.onclick = () => { reduceMotion = !reduceMotion; stillBtn.setAttribute("aria-pressed", reduceMotion); render(); };
+tInput.oninput = () => { playing = false; reduceMotion = false; stillBtn.setAttribute("aria-pressed", false); playBtn.textContent = "Play"; t = +tInput.value; render(); };
+speedInput.oninput = () => { speed = +speedInput.value; speedval.textContent = speed.toFixed(2) + "×"; };
+
+// ---- The curve ----
+const cc = document.getElementById("curve"), cctx = cc.getContext("2d");
+const zIn = document.getElementById("z"), wIn = document.getElementById("w");
+function drawCurve(time) {
+  const W = cc.width, H = cc.height, pad = 36, X = 1.2;
+  cctx.clearRect(0, 0, W, H);
+  const px = x => pad + (x / X) * (W - 2 * pad), py = y => H - pad - (y / 1.3) * (H - 2 * pad);
+  cctx.strokeStyle = css("--line"); cctx.lineWidth = 1;
+  [0, 1].forEach(y => { cctx.beginPath(); cctx.moveTo(pad, py(y)); cctx.lineTo(W - pad, py(y)); cctx.stroke(); });
+  cctx.fillStyle = css("--text2"); cctx.font = "22px ui-monospace, Menlo, monospace";
+  cctx.fillText("1", 8, py(1) + 7); cctx.fillText("0", 8, py(0) + 7); cctx.fillText(X + " s", W - pad - 50, H - 8);
+  cctx.beginPath();
+  for (let i = 0; i <= 240; i++) { const x = i / 240 * X, y = spring(x, W_COIN); i ? cctx.lineTo(px(x), py(y)) : cctx.moveTo(px(x), py(y)); }
+  cctx.strokeStyle = css("--accent"); cctx.lineWidth = 4; cctx.stroke();
+  // the first coin: x = t - 0.35
+  const x = time - 0.35;
+  if (x > 0 && x < X) {
+    cctx.beginPath(); cctx.arc(px(x), py(spring(x, W_COIN)), 9, 0, Math.PI * 2); cctx.fillStyle = css("--accent"); cctx.fill();
+    cctx.fillStyle = css("--text2"); cctx.fillText("coin 1", px(x) + 14, py(spring(x, W_COIN)) - 14);
+  }
+}
+zIn.oninput = () => { Z = +zIn.value; document.getElementById("zval").textContent = Z.toFixed(2); render(); };
+wIn.oninput = () => { W_COIN = +wIn.value; document.getElementById("wval").textContent = W_COIN; render(); };
+
+// ---- Theme: follows the blog (postMessage) or the system ----
+function setTheme(th) { document.documentElement.dataset.theme = th; render(); }
+const q = new URLSearchParams(location.search).get("theme");
+setTheme(q || (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"));
+addEventListener("message", e => { if (e.data && e.data.nsdemoTheme) setTheme(e.data.nsdemoTheme); });
+requestAnimationFrame(tick);
+</script>
+</body>
+</html>

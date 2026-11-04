@@ -1,18 +1,21 @@
 {{- /* Demo interactiva incrustada en un iframe.
      Uso: {{< demo src="/demos/motion-scene/" height="560" title="Escena de monedas" >}}
      Las demos son HTML autocontenidos en static/demos/<nombre>/index.html.
-     El iframe sigue el tema del blog: le pasa ?theme=dark|light al cargar y cuando cambia. */ -}}
+     El iframe sigue el tema del blog: le pasa ?theme=dark|light al cargar y cuando cambia.
+     En las páginas que no están en español usa la copia traducida de static/demos/<nombre>/<lang>/. */ -}}
 {{- $src := .Get "src" -}}
+{{- $lang := .Page.Language.Lang -}}
+{{- if ne $lang "es" }}{{ $src = printf "%s%s/" $src $lang }}{{ end -}}
 {{- $height := .Get "height" | default "520" -}}
-{{- $title := .Get "title" | default "Demo interactiva" -}}
+{{- $title := .Get "title" | default (cond (eq $lang "es") "Demo interactiva" "Interactive demo") -}}
 {{- $id := printf "demo-%d" .Ordinal -}}
 <figure class="nsdemo not-prose" style="margin:2rem 0">
   <iframe id="{{ $id }}" src="{{ $src | relURL }}" title="{{ $title }}" loading="lazy"
     style="width:100%;height:{{ $height }}px;border:0;border-radius:14px;background:transparent;display:block"></iframe>
   <figcaption style="font-size:.85rem;opacity:.7;margin-top:.5rem;text-align:center">
-    {{ $title }} · <a href="{{ $src | relURL }}" target="_blank" rel="noopener">abrir en otra pestaña</a>
+    {{ $title }} · <a href="{{ $src | relURL }}" target="_blank" rel="noopener">{{ cond (eq $lang "es") "abrir en otra pestaña" "open in a new tab" }}</a>
   </figcaption>
-  <noscript><p>Esta demo necesita JavaScript.</p></noscript>
+  <noscript><p>{{ cond (eq $lang "es") "Esta demo necesita JavaScript." "This demo needs JavaScript." }}</p></noscript>
 </figure>
 <script>
 (function () {
