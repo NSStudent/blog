@@ -1,0 +1,237 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Del token a la pantalla</title>
+<style>
+  /* La página de la demo sigue el tema del blog; el "kit" de dentro tiene su propio esquema. */
+  :root { --pg-bg:#ffffff; --pg-text:#111827; --pg-text2:#6B7280; --pg-line:#E5E7EB; --pg-accent:#3B82F6; }
+  :root[data-theme="dark"] { --pg-bg:#111827; --pg-text:#F9FAFB; --pg-text2:#9CA3AF; --pg-line:#374151; }
+  * { box-sizing:border-box; }
+  html, body { margin:0; background:var(--pg-bg); color:var(--pg-text); font:14px/1.4 -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif; }
+  .bar { display:flex; flex-wrap:wrap; gap:8px; padding:12px; align-items:center; }
+  .seg { display:inline-flex; border:1.5px solid var(--pg-accent); border-radius:9px; overflow:hidden; }
+  .seg button { background:transparent; color:var(--pg-accent); border:0; padding:6px 10px; font:inherit; font-weight:600; cursor:pointer; }
+  .seg button[aria-pressed="true"] { background:var(--pg-accent); color:#fff; }
+  .note { padding:0 12px 6px; color:var(--pg-text2); min-height:2.8em; }
+  .stage { display:flex; justify-content:center; align-items:flex-start; padding:8px 12px 16px; overflow:hidden; }
+  .scaler { transform-origin: top center; }
+  code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size:12px; }
+
+  /* ---------- El kit: tokens 1:1 con Color+Root.swift ---------- */
+  .kit {
+    --ebony:#111827; --ebonyClay:#1F2937; --athensGray:#E5E7EB; --oxfordBlue:#374151; --grayChateau:#9CA3AF; --paleSky:#6B7280;
+    --mischka:#D1D5DB; --dodgerBlue:#3B82F6; --shamrock:#34D399; --neonCarrot:#FB923C; --ecstasy:#F97316; --heliotrope:#A78BFA; --malibu:#60A5FA; --candlelight:#DEBA13;
+    --g: 4px; /* grid(n) = 4n */
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
+  }
+  .kit.light { --background:#fff; --surface:var(--athensGray); --skeleton:var(--mischka); --text:var(--ebony); --text2:var(--paleSky); --border:var(--mischka); }
+  .kit.dark  { --background:var(--ebony); --surface:var(--ebonyClay); --skeleton:var(--oxfordBlue); --text:#fff; --text2:var(--grayChateau); --border:var(--grayChateau); }
+  .kit { background:var(--background); color:var(--text); }
+
+  /* átomos */
+  .a-title { font-size:28px; font-weight:700; letter-spacing:-.01em; }
+  .a-head { font-size:13px; font-weight:600; text-transform:uppercase; letter-spacing:.05em; color:var(--text2); }
+  .a-body { font-size:15px; }
+  .a-sub { font-size:13px; color:var(--text2); }
+  .a-btn { display:inline-flex; align-items:center; justify-content:center; height:calc(var(--g) * 11); padding:0 calc(var(--g) * 5); border-radius:calc(var(--g) * 3); background:var(--dodgerBlue); color:#fff; font-weight:600; font-size:15px; border:0; }
+  .a-btn.secondary { background:transparent; color:var(--dodgerBlue); border:1.5px solid var(--dodgerBlue); }
+  .a-pill { display:inline-block; padding:2px calc(var(--g) * 2); border-radius:99px; font-size:12px; font-weight:600; }
+  .a-pill.ok { background:color-mix(in srgb, var(--shamrock) 20%, transparent); color:var(--shamrock); }
+  .a-pill.pending { background:color-mix(in srgb, var(--dodgerBlue) 18%, transparent); color:var(--dodgerBlue); }
+  .a-pill.timer { background:color-mix(in srgb, var(--neonCarrot) 20%, transparent); color:var(--neonCarrot); }
+  .a-thumb { width:calc(var(--g) * 11); height:calc(var(--g) * 11); border-radius:calc(var(--g) * 2); flex:none; display:grid; grid-template:repeat(4,1fr)/repeat(4,1fr); overflow:hidden; }
+  .a-thumb i:nth-child(odd) { background:#EEEED2; } .a-thumb i:nth-child(even) { background:#769656; }
+  .a-thumb i:nth-child(n+5):nth-child(-n+8):nth-child(odd) { background:#769656; } .a-thumb i:nth-child(n+5):nth-child(-n+8):nth-child(even) { background:#EEEED2; }
+  .a-thumb i:nth-child(n+13):nth-child(odd) { background:#769656; } .a-thumb i:nth-child(n+13):nth-child(even) { background:#EEEED2; }
+  .a-ring { width:calc(var(--g) * 14); height:calc(var(--g) * 14); border-radius:50%; background:conic-gradient(var(--dodgerBlue) 0 66%, var(--skeleton) 0); display:grid; place-items:center; flex:none; }
+  .a-ring span { width:78%; height:78%; border-radius:50%; background:var(--surface); display:grid; place-items:center; font-weight:700; font-size:15px; }
+
+  /* celdas */
+  .c-row { display:flex; align-items:center; gap:calc(var(--g) * 3); padding:calc(var(--g) * 3); }
+  .c-row + .c-row { border-top:1px solid color-mix(in srgb, var(--border) 40%, transparent); }
+  .c-row .grow { flex:1; min-width:0; }
+  .c-tile { background:var(--surface); border-radius:calc(var(--g) * 4); padding:calc(var(--g) * 3); display:flex; flex-direction:column; gap:calc(var(--g) * 1); }
+  .c-tile b { font-size:22px; }
+
+  /* composiciones */
+  .m-card { background:var(--surface); border-radius:calc(var(--g) * 5); overflow:hidden; }
+  .m-hero { display:flex; gap:calc(var(--g) * 4); align-items:center; padding:calc(var(--g) * 4); }
+  .m-section { display:flex; flex-direction:column; gap:calc(var(--g) * 2); }
+  .m-tiles { display:grid; grid-template-columns:1fr 1fr 1fr; gap:calc(var(--g) * 2); }
+
+  /* pantallas y dispositivos */
+  .device { position:relative; border-radius:44px; padding:12px; background:#0B0F19; box-shadow:0 10px 40px rgba(0,0,0,.25); }
+  .screen { position:relative; border-radius:34px; overflow:hidden; }
+  .screen-inner { position:absolute; inset:0; overflow:hidden; display:flex; }
+  .page { padding:calc(var(--g) * 4); display:flex; flex-direction:column; gap:calc(var(--g) * 4); overflow:hidden; }
+  .hinge { position:absolute; background:repeating-linear-gradient(45deg, rgba(239,68,68,.35) 0 6px, rgba(239,68,68,.15) 6px 12px); pointer-events:none; }
+  .air { position:absolute; border:1px dashed rgba(239,68,68,.8); pointer-events:none; }
+  .tabbar { margin-top:auto; display:flex; justify-content:space-around; padding:calc(var(--g) * 2) 0; color:var(--text2); font-size:11px; border-top:1px solid color-mix(in srgb, var(--border) 30%, transparent); }
+  .tabbar .on { color:var(--dodgerBlue); font-weight:600; }
+  .basebar { display:flex; align-items:center; gap:calc(var(--g) * 3); height:76px; padding:0 calc(var(--g) * 4); border-top:1px solid color-mix(in srgb, var(--border) 30%, transparent); }
+  .tag { position:absolute; font:600 11px ui-monospace, Menlo, monospace; color:#EF4444; background:var(--pg-bg); padding:1px 4px; border-radius:4px; }
+
+  /* niveles */
+  .swatches { display:grid; grid-template-columns:repeat(auto-fill, minmax(118px, 1fr)); gap:8px; width:min(720px, 100%); }
+  .sw { border-radius:10px; overflow:hidden; border:1px solid var(--pg-line); font-size:12px; }
+  .sw div { height:44px; }
+  .sw p { margin:0; padding:6px 8px; }
+  .sw p span { display:block; color:var(--pg-text2); font-family:ui-monospace, Menlo, monospace; font-size:11px; }
+  .gridrow { display:flex; gap:10px; align-items:flex-end; margin-top:14px; flex-wrap:wrap; }
+  .gridrow div { background:var(--pg-accent); border-radius:3px; }
+  .gridrow span { display:block; font:11px ui-monospace, Menlo, monospace; color:var(--pg-text2); margin-top:4px; text-align:center; }
+  .board-level { padding:20px; border-radius:16px; display:flex; flex-direction:column; gap:16px; width:min(720px, 100%); }
+  .board-level .lbl { font:11px ui-monospace, Menlo, monospace; color:var(--text2); margin-bottom:6px; }
+  .inline { display:flex; gap:12px; flex-wrap:wrap; align-items:center; }
+</style>
+</head>
+<body>
+<div class="bar">
+  <div class="seg" id="levels" role="group" aria-label="Nivel">
+    <button data-v="tokens">Tokens</button><button data-v="atoms">Átomos</button><button data-v="cells">Celdas</button><button data-v="comps">Composiciones</button><button data-v="screen">Pantalla</button>
+  </div>
+  <div class="seg" id="scheme" role="group" aria-label="Esquema">
+    <button data-v="light">Claro</button><button data-v="dark">Oscuro</button>
+  </div>
+  <div class="seg" id="device" role="group" aria-label="Dispositivo">
+    <button data-v="iphone">iPhone</button><button data-v="book">Duo libro</button><button data-v="tabletop">Duo tabletop</button>
+  </div>
+  <div class="seg" id="rules" role="group" aria-label="Reglas">
+    <button data-v="on">Ver bisagra</button>
+  </div>
+</div>
+<p class="note" id="note"></p>
+<div class="stage"><div class="scaler" id="scaler"><div id="out"></div></div></div>
+
+<script>
+// Estado
+const st = { level: "screen", scheme: "dark", device: "book", rules: true };
+const notes = {
+  tokens: "Los primitivos de color son los de <code>Color+Root.swift</code>, copiados 1:1 a variables CSS. El espaciado es la misma rejilla: <code>grid(n) = 4n</code>.",
+  atoms: "Átomos: texto, botones, píldoras de estado, miniaturas. Solo usan tokens: cambiar el esquema cambia los tokens semánticos, no el átomo.",
+  cells: "Celdas: un átomo al lado de otro con un padding de la rejilla. Una fila de repaso es miniatura + título + subtítulo + píldora.",
+  comps: "Composiciones: celdas agrupadas en tarjetas y secciones. Aquí ya hay jerarquía, pero todavía no hay datos ni pantalla.",
+  screen: "Una pantalla es una función <code>render(scheme, layout)</code> que coloca composiciones con datos. La misma función sirve para iPhone y para cada postura del Duo."
+};
+
+// ---------- Helpers del "kit" (versión reducida de los K.* de MindChess) ----------
+const K = {
+  thumb: () => `<div class="a-thumb">${"<i></i>".repeat(16)}</div>`,
+  pill: (kind, text) => `<span class="a-pill ${kind}">${text}</span>`,
+  btn: (text, secondary) => `<button class="a-btn ${secondary ? "secondary" : ""}">${text}</button>`,
+  row: (title, sub, pill) => `<div class="c-row">${K.thumb()}<div class="grow"><div class="a-body">${title}</div><div class="a-sub">${sub}</div></div>${pill || ""}</div>`,
+  tile: (n, label) => `<div class="c-tile"><b>${n}</b><span class="a-sub">${label}</span></div>`,
+  challenge: () => `<div class="m-card"><div class="m-hero"><div class="a-ring"><span>2/3</span></div><div class="grow"><div class="a-head">Reto diario</div><div class="a-body" style="font-weight:600;margin:4px 0">Te queda un ejercicio</div><div class="a-sub">Color de casillas · 60 s</div></div></div><div style="padding:0 16px 16px">${K.btn("Jugar")}</div></div>`,
+  review: () => `<div class="m-section"><div class="a-head">Repasos de hoy</div><div class="m-card">${K.row("Siciliana Najdorf", "6 jugadas · línea principal", K.pill("pending", "Hoy"))}${K.row("Defensa Caro-Kann", "4 jugadas · avance", K.pill("timer", "Atrasada"))}${K.row("Gambito de dama", "5 jugadas · aceptado", K.pill("ok", "Hecha"))}</div></div>`,
+  week: () => `<div class="m-section"><div class="a-head">Tu semana</div><div class="m-tiles">${K.tile("12", "días de racha")}${K.tile("86%", "precisión")}${K.tile("41", "ejercicios")}</div></div>`,
+  tabbar: () => `<div class="tabbar"><span class="on">Hoy</span><span>Entrenar</span><span>Estudio</span><span>Partidas</span><span>Tú</span></div>`,
+};
+
+// ---------- La pantalla "Hoy": una función por pantalla ----------
+const screens = {
+  today: {
+    id: "today", title: "Hoy",
+    render(layout) {
+      const title = `<div class="a-title">Hoy</div>`;
+      if (layout.kind === "iphone")
+        return `<div class="page" style="width:100%">${title}${K.challenge()}${K.review()}${K.week()}</div>`;
+      if (layout.kind === "book") {
+        // dos páginas, cada una a 8 pt de la banda de la bisagra
+        const p = layout.pages;
+        return `<div class="page" style="position:absolute;left:0;top:0;bottom:0;width:${p.first}px">${title}${K.challenge()}${K.week()}</div>
+                <div class="page" style="position:absolute;left:${p.secondX}px;top:0;bottom:0;right:0;padding-top:64px">${K.review()}</div>`;
+      }
+      // tabletop: lo visual arriba (sin botones), lo que se toca abajo
+      return `<div style="position:absolute;left:0;right:0;top:0;height:${layout.monitor}px;display:flex;align-items:center;justify-content:center;gap:28px;padding:16px">
+                <div class="a-ring" style="width:150px;height:150px"><span style="font-size:30px">2/3</span></div>
+                <div><div class="a-head">Reto diario</div><div class="a-title" style="margin:6px 0">Te queda uno</div><div class="a-sub">12 días de racha · 86% de precisión</div></div>
+              </div>
+              <div style="position:absolute;left:0;right:0;top:${layout.baseY}px;bottom:0;display:flex;flex-direction:column">
+                <div class="basebar">${K.btn("Jugar")}<div class="a-head" style="margin-left:auto">Hoy</div></div>
+                <div class="page" style="padding-top:8px">${K.review()}</div>
+                ${K.tabbar()}
+              </div>`;
+    }
+  }
+};
+
+// ---------- Geometría del Duo (la misma que MCFoldMetrics) ----------
+const DUO = { w: 951, h: 669, hinge: [462, 489], air: 8 };
+function deviceFrame(content, w, h, hinge) {
+  const rules = st.rules && hinge ? hinge : "";
+  return `<div class="device"><div class="screen kit ${st.scheme}" style="width:${w}px;height:${h}px"><div class="screen-inner">${content}</div>${rules}</div></div>`;
+}
+
+function render() {
+  const out = document.getElementById("out");
+  document.getElementById("note").innerHTML = notes[st.level];
+  document.querySelectorAll("#device button, #rules button").forEach(b => b.disabled = st.level !== "screen");
+  document.getElementById("device").style.opacity = document.getElementById("rules").style.opacity = st.level === "screen" ? 1 : .4;
+  let html = "", natW = 720;
+  if (st.level === "tokens") {
+    const names = ["ebony", "ebonyClay", "athensGray", "oxfordBlue", "grayChateau", "paleSky", "mischka", "dodgerBlue", "shamrock", "neonCarrot", "ecstasy", "heliotrope", "malibu", "candlelight"];
+    const probe = document.createElement("div"); probe.className = "kit"; document.body.appendChild(probe);
+    const cs = getComputedStyle(probe);
+    html = `<div class="swatches">${names.map(n => { const v = cs.getPropertyValue("--" + n).trim(); return `<div class="sw"><div style="background:${v}"></div><p>${n}<span>${v}</span></p></div>`; }).join("")}</div>
+      <div class="gridrow">${[1, 2, 3, 4, 6, 8, 11].map(n => `<div><div style="width:${n * 4}px;height:${n * 4}px"></div><span>grid(${n})</span></div>`).join("")}</div>`;
+    probe.remove();
+  } else if (st.level === "atoms") {
+    html = `<div class="kit ${st.scheme} board-level">
+      <div><div class="lbl">texto</div><div class="a-title">Hoy</div><div class="a-head">Repasos de hoy</div><div class="a-body">Siciliana Najdorf</div><div class="a-sub">6 jugadas · línea principal</div></div>
+      <div><div class="lbl">botones</div><div class="inline">${K.btn("Jugar")}${K.btn("Cambiar", true)}</div></div>
+      <div><div class="lbl">píldoras de estado</div><div class="inline">${K.pill("pending", "Hoy")}${K.pill("timer", "Atrasada")}${K.pill("ok", "Hecha")}</div></div>
+      <div><div class="lbl">miniatura y anillo</div><div class="inline">${K.thumb()}<div class="a-ring"><span>2/3</span></div></div></div></div>`;
+  } else if (st.level === "cells") {
+    html = `<div class="kit ${st.scheme} board-level">
+      <div><div class="lbl">fila de repaso = miniatura + texto + píldora</div><div style="background:var(--surface);border-radius:20px">${K.row("Siciliana Najdorf", "6 jugadas · línea principal", K.pill("pending", "Hoy"))}</div></div>
+      <div><div class="lbl">mosaico = cifra + etiqueta</div><div style="width:160px">${K.tile("12", "días de racha")}</div></div></div>`;
+  } else if (st.level === "comps") {
+    html = `<div class="kit ${st.scheme} board-level"><div class="lbl">tarjeta de reto</div>${K.challenge()}<div class="lbl">sección de repasos</div>${K.review()}<div class="lbl">sección de la semana</div>${K.week()}</div>`;
+  } else {
+    const s = screens.today;
+    if (st.device === "iphone") {
+      html = deviceFrame(s.render({ kind: "iphone" }) + `<div style="position:absolute;left:0;right:0;bottom:0">${K.tabbar()}</div>`, 390, 844);
+      natW = 414;
+    } else if (st.device === "book") {
+      const first = DUO.hinge[0] - DUO.air, secondX = DUO.hinge[1] + DUO.air;
+      const rules = `<div class="hinge" style="left:${DUO.hinge[0]}px;width:${DUO.hinge[1] - DUO.hinge[0]}px;top:0;bottom:0"></div>
+        <div class="air" style="left:${first}px;width:${secondX - first}px;top:0;bottom:0"></div>
+        <span class="tag" style="left:${DUO.hinge[1] + 14}px;top:14px">bisagra 27 pt + 8 pt de aire</span>`;
+      html = deviceFrame(s.render({ kind: "book", pages: { first, secondX } }), DUO.w, DUO.h, rules);
+      natW = DUO.w + 24;
+    } else {
+      const w = DUO.h, h = DUO.w, band = DUO.hinge, baseY = band[1] + DUO.air;
+      const rules = `<div class="hinge" style="top:${band[0]}px;height:${band[1] - band[0]}px;left:0;right:0"></div>
+        <span class="tag" style="right:12px;top:${band[0] - 22}px">monitor: nada pulsable</span>
+        <span class="tag" style="right:12px;top:${band[1] + 12}px">base: todo lo que se toca</span>`;
+      html = deviceFrame(s.render({ kind: "tabletop", monitor: band[0], baseY }), w, h, rules);
+      natW = w + 24;
+    }
+  }
+  out.innerHTML = html;
+  // escala para que quepa en el iframe
+  const avail = Math.max(260, document.querySelector(".stage").clientWidth - 24);
+  const k = Math.min(1, avail / natW);
+  const sc = document.getElementById("scaler");
+  sc.style.transform = `scale(${k})`;
+  sc.style.height = (out.scrollHeight * k) + "px";
+  sc.style.width = natW + "px";
+  sc.parentElement.style.height = (out.scrollHeight * k + 24) + "px";
+  ["levels", "scheme", "device"].forEach(g => document.querySelectorAll(`#${g} button`).forEach(b => b.setAttribute("aria-pressed", b.dataset.v === st[{ levels: "level", scheme: "scheme", device: "device" }[g]])));
+  document.querySelector("#rules button").setAttribute("aria-pressed", st.rules);
+}
+document.querySelectorAll("#levels button").forEach(b => b.onclick = () => { st.level = b.dataset.v; render(); });
+document.querySelectorAll("#scheme button").forEach(b => b.onclick = () => { st.scheme = b.dataset.v; render(); });
+document.querySelectorAll("#device button").forEach(b => b.onclick = () => { st.device = b.dataset.v; render(); });
+document.querySelector("#rules button").onclick = () => { st.rules = !st.rules; render(); };
+addEventListener("resize", render);
+
+function setTheme(th) { document.documentElement.dataset.theme = th; render(); }
+const q = new URLSearchParams(location.search).get("theme");
+setTheme(q || (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"));
+addEventListener("message", e => { if (e.data && e.data.nsdemoTheme) setTheme(e.data.nsdemoTheme); });
+</script>
+</body>
+</html>
