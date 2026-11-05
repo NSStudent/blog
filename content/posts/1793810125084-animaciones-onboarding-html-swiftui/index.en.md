@@ -1,9 +1,9 @@
 ---
-title: "Motion graphics with AI, but in native SwiftUI: the MindChess onboarding scenes"
+title: "MindChess onboarding animations in SwiftUI, thanks to AI"
 date: 2026-11-05
 draft: false
 layout: simple
-description: "How I use AI to make motion graphics that end up in native SwiftUI: every scene is a pure function of time, prototyped on an HTML canvas with an agent and ported line by line to a SwiftUI Canvas. Two real cases from the MindChess onboarding."
+description: "How I made the MindChess onboarding animations with AI and took them to native SwiftUI. Every scene is a function of time, prototyped in HTML with an agent and ported to a SwiftUI Canvas."
 summary: "Everyone is making motion graphics with AI for videos. I wanted the same thing inside the app, in native SwiftUI. The key was writing every scene as a draw(t) function."
 tags: ["swiftui", "animations", "canvas", "ai", "mindchess"]
 showTableOfContents: true
@@ -19,15 +19,17 @@ Because the scene is code and not an embedded video, I control things a video ca
 
 There's another case I find even more interesting. Some people turn on **Reduce Motion** in Settings › Accessibility › Motion, because animations make them dizzy or distract them. Apps can read that setting (in SwiftUI, through the `accessibilityReduceMotion` environment value). With a video, all you can do is remove it. With a scene in code, I pick a frame that already tells the story and leave it as a still image, respecting that person's choice.
 
-It turns out you can, and this post is about how I do it in MindChess. The onboarding and the What's New screen have small animated scenes. They were all born in HTML with an AI agent, and they all moved to SwiftUI **without a single SwiftUI animation**: no `withAnimation`, no `matchedGeometryEffect`, no transitions.
+These are the scenes in the MindChess onboarding and What's New screen. They were born in HTML with an AI agent. Then they moved to SwiftUI **without a single SwiftUI animation**, no `withAnimation`, no `matchedGeometryEffect`, no transitions.
 
-First I'll explain the idea and how it gets to SwiftUI, and then I'll apply it to two real scenes you can play with in the browser: the badge and the bots.
+![Two MindChess scenes at their final frame: on the left, the badge earned with 10/10; on the right, Sofía by the board after 1.e4 e5](dos-escenas.png "Ten coins that forge a badge, and picking a rival who plays the first move.")
+
+Let's talk about these two examples.
 
 ## The idea: a scene is a function of time
 
 The usual way to animate in SwiftUI is to declare states and let the system interpolate between them. It works very well for UI, but for a five-second scene with fifteen things moving out of step it turns into a chain of `DispatchQueue.main.asyncAfter`, intermediate states and animations stepping on each other.
 
-The motion graphics people make with AI don't work like that. They're a timeline: at 1.2 seconds this is here, at 1.5 it's over there. So I borrowed that idea. The MindChess scenes have no state. They have a function:
+The motion graphics people make with AI don't work like that. They're a timeline. At 1200 ms this is here, and 300 ms later, at 1500 ms, it's over there. So I borrowed that idea. The MindChess scenes have no state. They have a function:
 
 ```text
 draw(t) → the frame at second t
@@ -37,9 +39,9 @@ Everything on screen is computed from `t`: where each piece is, its opacity, its
 
 That gives you three things for free:
 
-- **Deterministic snapshot tests** (tests that compare an image of the view with a saved one): drawing `draw(4.4)` always gives the same image.
+- **Deterministic snapshot tests** (tests that compare an image of the view with a saved one): drawing `draw(4.4)`, the 4400 ms mark, always gives the same image.
 - **Reduce Motion:** instead of animating, you draw a single still frame that already tells the story.
-- **Seamless loops:** if everything fades back to zero opacity at the end, second 0 and the last second line up.
+- **Seamless loops:** if everything fades back to zero opacity at the end, the first frame and the last one line up.
 
 And a fourth one, which is the one that matters here: **a pure function translates from one language to another.** If the prototype is a stateless JavaScript function, the Swift port is another function with the same lines.
 
@@ -47,9 +49,9 @@ And a fourth one, which is the one that matters here: **a pure function translat
 
 Every scene is drawn in a logical box of **360 × 280** points and then scaled to whatever space the screen gives it. That way the prototype's coordinates and the Swift ones are the same, number for number.
 
-And they all follow the same grammar: **entry → action → result → rest**. Something appears, something happens, you see the result and the scene settles on a frame that sums it up. That rest frame is the second each scene declares as its `stillTime`: it's the one drawn with Reduce Motion and in the snapshot tests, so it has to tell the story on its own.
+And they all follow the same grammar: **entry → action → result → rest**. Something appears, something happens, you see the result and the scene settles on a frame that sums it up. That rest frame is the instant each scene declares as its `stillTime`. It's the one drawn with Reduce Motion and in the snapshot tests, so it has to tell the story on its own.
 
-This grammar is also what I ask the agent for. I don't say "make me a nice animation": I tell it what happens in each phase and at which second.
+This grammar is also what I ask the agent for. I don't say "make me a nice animation". I tell it what happens in each phase and at which millisecond.
 
 ## Closed-form curves
 
@@ -96,16 +98,16 @@ public enum Motion {
 }
 ```
 
-`spring` is the response of a spring with 0.78 damping: it goes from 0 to 1, overshoots a little and settles. The `w` parameter sets how fast. `smooth` goes from 0 to 1 between two instants, easing in and out (graphics people call this curve *smoothstep*), perfect for fades. `bump` is a spring that goes up and comes back down: a "pop".
+`spring` is the response of a spring with 0.78 damping. It goes from 0 to 1, overshoots a little and settles. The `w` parameter sets how fast. `smooth` goes from 0 to 1 between two instants, easing in and out (graphics people call this curve *smoothstep*), perfect for fades. `bump` is a spring that goes up and comes back down, a "pop".
 
-In the demos for both cases, further down, you can change the damping and the frequency and see how the shape of the spring changes. The dot marks where the scene's main spring is at each instant.
+In the demos for both cases, further down, you can change the springs' damping and frequency and see how both the curve and the animation itself change. The dot marks where the scene's main spring is at each instant.
 
 ## Prototyping in the browser with AI
 
 The prototype lives in the MindChess design kit, in a JavaScript file of scenes (`motion.js`). Each scene is a function that takes a `<canvas>` context and `t`. Writing them with an AI agent works especially well, for three reasons:
 
-1. **The plain-language description is almost the code already.** "Ten coins on a ring of radius 88; one drops every 0.2 s from 64 pt above with a spring of frequency 16" translates almost literally.
-2. **You iterate by looking at the browser.** I reload, drag time to the moment I don't like and tell the agent what to change at that exact second.
+1. **The plain-language description is almost the code already.** "Ten coins on a ring of radius 88; one drops every 200 milliseconds from 64 pt above with a spring of frequency 16" translates almost literally.
+2. **You iterate by looking at the browser.** I reload, drag time to the moment I don't like and tell the agent what to change at that exact instant.
 3. **The data is real.** The colours come from the app's tokens, the pieces are the game's and the avatars are the real bots'.
 
 Then the same agent does the port. I give it the JavaScript scene and the Swift kit, and since both are pure functions with the same curves, the result comes out right almost on the first try.
@@ -126,7 +128,7 @@ public protocol MotionScene: Sendable {
 }
 ```
 
-**A canvas you copy.** `MotionCanvas` wraps SwiftUI's `GraphicsContext` (the object you draw with inside a `Canvas`), the colour scheme's palette and a few helpers (`circle`, `fill`, `text`, `image`). It's a value type (a `struct`: assigning it makes a copy), and that replaces the HTML canvas's `save()` and `restore()`, which save and restore the drawing state: to change the opacity or the transform of one part, you copy it, change the copy and throw it away.
+**A canvas you copy.** `MotionCanvas` wraps SwiftUI's `GraphicsContext` (the object you draw with inside a `Canvas`), the colour scheme's palette and a few helpers (`circle`, `fill`, `text`, `image`). It's a value type (a `struct`: assigning it makes a copy), and that replaces the HTML canvas's `save()` and `restore()`, which save and restore the drawing state. To change the opacity or the transform of one part, you copy it, change the copy and throw it away.
 
 ```swift
 var coin = c                       // a copy: saves the state
@@ -148,7 +150,7 @@ TimelineView(.animation(minimumInterval: 1 / 60, paused: !isLive || !isOnScreen)
 }
 ```
 
-With that in place, let's look at two real scenes.
+With that in place, let's go back to the two examples from the start.
 
 ## Case 1: ten coins that forge a badge
 
@@ -156,12 +158,12 @@ The first one is from the onboarding: every game you play is a coin, and ten coi
 
 | Phase | Time | What happens |
 |---|---|---|
-| Entry | 0–0.25 s | The ring of ten slots appears |
-| Action | 0.35–2.15 s | A coin drops every 0.2 s and the counter goes up |
-| Result | 2.75–4.0 s | The ring melts, the badge flips and is earned, sparks fly |
-| Rest | 4.4 s | The still frame: the badge and "10/10" |
+| Entry | 0–250 ms | The ring of ten slots appears |
+| Action | 350–2150 ms | A coin drops every 200 ms and the counter goes up |
+| Result | 2750–4000 ms | The ring melts, the badge flips and is earned, sparks fly |
+| Rest | 4400 ms (`stillTime = 4.4`) | The still frame, with the badge and "10/10" |
 
-![Five frames of the coin scene: at 0.45 s the empty ring and the first coin dropping; at 1.1 s four coins; at 2 s eight; at 3.05 s the ring melting around the badge; at 4.4 s the badge earned](coins-frames.png "The same function at five instants. At 4.4 s, the still frame.")
+![Five frames of the coin scene: at 450 ms the empty ring and the first coin dropping; at 1100 ms four coins; at 2000 ms eight; at 3050 ms the ring melting around the badge; at 4400 ms the badge earned](coins-frames.png "The same function at five instants. At 4400 ms, the still frame.")
 
 This is the real scene, running the prototype's own JavaScript. You can pause it and scrub through time:
 
@@ -221,18 +223,18 @@ The second one is from 1.4, to introduce the bots. Three rivals, one per level. 
 
 | Phase | Time | What happens |
 |---|---|---|
-| Entry | 0–0.6 s | The three cards appear, one after another |
-| Action | 1.35–2.4 s | Sofía lights up, the other two leave, she moves to her seat and the board appears |
-| Result | 2.75–3.9 s | 1.e4; Sofía thinks (the three dots) and answers 1…e5 |
-| Rest | 4.6 s | The still frame: Sofía by the board with the last move highlighted |
+| Entry | 0–600 ms | The three cards appear, one after another |
+| Action | 1350–2400 ms | Sofía lights up, the other two leave, she moves to her seat and the board appears |
+| Result | 2750–3900 ms | 1.e4, Sofía thinks (the three dots) and answers 1…e5 |
+| Rest | 4600 ms (`stillTime = 4.6`) | The still frame, with Sofía by the board and the last move highlighted |
 
-![Five frames of the bots scene: at 0.6 s the three cards for Pip, Sofía and Viktor; at 1.5 s Sofía picked, with her border lit; at 2.5 s Sofía by the board in the starting position; at 3.3 s after 1.e4, with Sofía thinking; at 4.6 s after 1…e5](bots-frames.webp "The bots scene at five instants. The avatars and pieces are the app's.")
+![Five frames of the bots scene: at 600 ms the three cards for Pip, Sofía and Viktor; at 1500 ms Sofía picked, with her border lit; at 2500 ms Sofía by the board in the starting position; at 3300 ms after 1.e4, with Sofía thinking; at 4600 ms after 1…e5](bots-frames.webp "The bots scene at five instants. The avatars and pieces are the app's.")
 
 And here it is running, with the same time controls:
 
 {{< demo src="/demos/motion-scene/?scene=bots" height="640" title="The bots scene: three rivals, one is picked and 1.e4 e5 is played" >}}
 
-What's interesting about this scene is how the work is split between functions. The board is a separate function, `playBoard`, that takes a position and a list of moves with the second each one is played. Each move is a spring from the source square to the destination square, and the last one is highlighted in yellow, as in the app. The scene only says which moves and when:
+What's interesting about this scene is how the work is split between functions. The board is a separate function, `playBoard`, that takes a position and a list of moves with the instant each one is played. Each move is a spring from the source square to the destination square, and the last one is highlighted in yellow, as in the app. The scene only says which moves and when:
 
 ```swift
 struct BotsScene: MotionScene {
@@ -284,14 +286,14 @@ public enum MotionPlayback: Equatable, Sendable {
 }
 ```
 
-The onboarding and What's New snapshots draw every scene at its still frame, in light and dark, on the iPhone and in every Duo posture. If someone changes a curve and the badge is no longer centred at 4.4 seconds, the test fails.
+The onboarding and What's New snapshots draw every scene at its still frame, in light and dark, on the iPhone and in every Duo posture. If someone changes a curve and the badge is no longer centred at 4400 ms, the test fails.
 
 ## Takeaways
 
 - **AI isn't just for making motion graphics videos.** If you ask for the scene as a function of time, the result can be taken to native code.
 - **A function of time is easier to reason about than a chain of animations.** And you can jump to any instant to debug it.
 - **Closed-form formulas travel well between languages.** The JavaScript curves and the Swift ones are the same lines in a different syntax, and the same agent does the port.
-- **Prototyping in the browser with an agent is very fast** when you can point at a specific second and say what's wrong.
+- **Prototyping in the browser with an agent is very fast** when you can point at a specific instant and say what's wrong.
 - **Accessibility and tests come for free** if the still frame tells the story.
 
 {{< promo "mindchess" >}}
