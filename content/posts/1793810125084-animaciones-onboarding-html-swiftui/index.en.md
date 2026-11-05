@@ -17,7 +17,7 @@ After watching a few of them, I started wondering about something else: **is the
 
 Because the scene is code and not an embedded video, I control things a video can't. I can change its speed without exporting anything again. The same scene is drawn in light or dark mode colours, because it reads the app's colours at that moment. And it can adapt to the device: on the iPhone Duo it makes no sense to show the same animation with the phone open and closed, and the clock scene, for example, shows the real hinge when the Duo is in tabletop mode. Here it is both ways:
 
-{{< demo src="/demos/motion-clock/" height="380" title="The same clock scene on an iPhone and on an iPhone Duo in tabletop: the code decides what to draw" >}}
+{{< demo src="/demos/motion-clock/" height="460" title="The same clock scene on an iPhone and on an iPhone Duo in tabletop: the code decides what to draw" >}}
 
 There's another case I find even more interesting. Some people turn on **Reduce Motion** in Settings › Accessibility › Motion, because animations make them dizzy or distract them. Apps can read that setting (in SwiftUI, through the `accessibilityReduceMotion` environment value). With a video, all you can do is remove it. With a scene in code, I pick a frame that already tells the story and leave it as a still image, respecting that person's choice.
 
