@@ -75,7 +75,7 @@ Y en Swift, en la app, línea por línea:
 
 ```swift
 public enum Motion {
-    /// Damped spring from 0 to 1 starting at `x = 0` (damping 0.78, `w` rad/s); 0 before it starts.
+    /// Muelle amortiguado de 0 a 1 que arranca en `x = 0` (amortiguación 0.78, `w` rad/s); 0 antes de empezar.
     public static func spring(_ x: Double, _ w: Double = 14) -> Double {
         guard x > 0 else { return 0 }
         let z = 0.78, wd = w * (1 - z * z).squareRoot(), e = exp(-z * w * x)
@@ -91,7 +91,7 @@ public enum Motion {
 
     public static func lerp(_ a: Double, _ b: Double, _ k: Double) -> Double { a + (b - a) * k }
 
-    /// A spring up at `c` and back down `len` seconds later.
+    /// Un muelle que sube en `c` y vuelve a bajar `len` segundos después.
     public static func bump(_ t: Double, _ c: Double, _ len: Double = 0.14, _ w: Double = 30) -> Double {
         spring(t - c, w) - spring(t - c - len, w)
     }

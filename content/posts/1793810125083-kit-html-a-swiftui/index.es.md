@@ -165,11 +165,11 @@ Con la pantalla decidida, el paso a SwiftUI es casi mecánico, porque todo lo qu
 - **Las constantes se llaman igual.** El aire alrededor de la bisagra es `P.DUO.AIR` en el kit y `MCFoldMetrics.air` en Swift, con un comentario que apunta al original:
 
   ```swift
-  /// Fixed iPhone Duo distances of the kit (`P.DUO`).
+  /// Distancias fijas del iPhone Duo en el kit (`P.DUO`).
   public enum MCFoldMetrics {
-      /// Minimum distance between anything tappable and the hinge band (`P.DUO.AIR`).
+      /// Distancia mínima entre cualquier cosa pulsable y la banda de la bisagra (`P.DUO.AIR`).
       public static let air: CGFloat = 8
-      /// Height of the tabletop base bar (`P.DUO.BASEBAR`).
+      /// Alto de la barra de la base en tabletop (`P.DUO.BASEBAR`).
       public static let baseBarHeight: CGFloat = 76
   }
   ```
