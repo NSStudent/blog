@@ -100,7 +100,7 @@ public enum Motion {
 
 `spring` is the response of a spring with 0.78 damping. It goes from 0 to 1, overshoots a little and settles. The `w` parameter sets how fast. `smooth` goes from 0 to 1 between two instants, easing in and out (graphics people call this curve *smoothstep*), perfect for fades. `bump` is a spring that goes up and comes back down, a "pop".
 
-In the demos for both cases, further down, you can change the damping and the frequency and see how the shape of the spring changes. The dot marks where the scene's main spring is at each instant.
+In the demos for both cases, further down, you can change the springs' damping and frequency and see how both the curve and the animation itself change. The dot marks where the scene's main spring is at each instant.
 
 ## Prototyping in the browser with AI
 

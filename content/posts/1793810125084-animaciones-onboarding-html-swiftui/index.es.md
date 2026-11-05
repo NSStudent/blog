@@ -100,7 +100,7 @@ public enum Motion {
 
 `spring` es la respuesta de un muelle con una amortiguación de 0,78. Sube de 0 a 1, se pasa un poco y se asienta. El parámetro `w` decide lo rápido que lo hace. `smooth` va de 0 a 1 entre dos instantes, arrancando y frenando suave (es la curva que en gráficos se llama *smoothstep*), perfecta para fundidos. `bump` es un muelle que sube y baja, un «pop».
 
-En las demos de los dos casos, más abajo, puedes cambiar la amortiguación y la frecuencia y ver cómo cambia la forma del muelle. El punto marca dónde está el muelle principal de la escena en cada instante.
+En las demos de los dos casos, más abajo, puedes cambiar la amortiguación y la frecuencia de los muelles y ver cómo cambian la curva y la propia animación. El punto marca dónde está el muelle principal de la escena en cada instante.
 
 ## Prototipar en el navegador con IA
 
