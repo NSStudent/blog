@@ -13,9 +13,9 @@ showTableOfContents: true
 
 For a while now I've been watching people make motion graphics with AI. Since Opus 5.5 came out, every week someone shows up with a product video, an animated intro or an explainer full of moving type, all of it made by describing what they want to an agent that writes the code.
 
-After watching a few of them, I started wondering about something else: **is there a way to do the same thing and take it to native SwiftUI?** I don't want a video inside the app. I want a scene that's drawn on the device, in the user's theme colours, that respects Reduce Motion and that I can test with snapshots.
+After watching a few of them, I started wondering about something else: **is there a way to do the same thing and take it to native SwiftUI?** I don't want a video inside the app. I want a scene that's drawn on the device, in the user's theme colours, that respects the accessibility settings and that I can test with snapshot tests.
 
-Reduce Motion is an iOS accessibility setting, under Settings › Accessibility › Motion. People turn it on when animations make them dizzy or distract them, and it asks every app to swap motion for something still or simpler. A video can't do that. A scene the app draws itself can: with the setting on, instead of animating, it shows a single still image that tells the same story.
+The setting that matters most here is **Reduce Motion**, under Settings › Accessibility › Motion. People turn it on when animations make them dizzy or distract them. Apps read it (in SwiftUI, through the `accessibilityReduceMotion` environment value) and should swap movement for something still or a simple fade. A video can't do that. A scene the app draws itself can: with the setting on, MindChess doesn't play it and draws a single still frame that already tells the story.
 
 It turns out you can, and this post is about how I do it in MindChess. The onboarding and the What's New screen have small animated scenes. They were all born in HTML with an AI agent, and they all moved to SwiftUI **without a single SwiftUI animation**: no `withAnimation`, no `matchedGeometryEffect`, no transitions.
 
@@ -39,7 +39,7 @@ Everything on screen is computed from `t`: where each piece is, its opacity, its
 
 That gives you three things for free:
 
-- **Deterministic snapshots:** drawing `draw(4.4)` always gives the same image.
+- **Deterministic snapshot tests** (tests that compare an image of the view with a saved one): drawing `draw(4.4)` always gives the same image.
 - **Reduce Motion:** instead of animating, you draw a single still frame that already tells the story.
 - **Seamless loops:** if everything fades back to zero opacity at the end, second 0 and the last second line up.
 
@@ -49,7 +49,7 @@ And a fourth one, which is the one that matters here: **a pure function translat
 
 Every scene is drawn in a logical box of **360 × 280** points and then scaled to whatever space the screen gives it. That way the prototype's coordinates and the Swift ones are the same, number for number.
 
-And they all follow the same grammar: **entry → action → result → rest**. Something appears, something happens, you see the result and the scene settles on a frame that sums it up. That rest frame (`stillTime`) is the one drawn with Reduce Motion and in the snapshots, so it has to tell the story on its own.
+And they all follow the same grammar: **entry → action → result → rest**. Something appears, something happens, you see the result and the scene settles on a frame that sums it up. That rest frame is the second each scene declares as its `stillTime`: it's the one drawn with Reduce Motion and in the snapshot tests, so it has to tell the story on its own.
 
 This grammar is also what I ask the agent for. I don't say "make me a nice animation": I tell it what happens in each phase and at which second.
 
@@ -98,7 +98,7 @@ public enum Motion {
 }
 ```
 
-`spring` is the response of a spring with 0.78 damping: it goes from 0 to 1, overshoots a little and settles. The `w` parameter sets how fast. `smooth` is a smoothstep between two instants, perfect for fades. `bump` is a spring that goes up and comes back down: a "pop".
+`spring` is the response of a spring with 0.78 damping: it goes from 0 to 1, overshoots a little and settles. The `w` parameter sets how fast. `smooth` goes from 0 to 1 between two instants, easing in and out (graphics people call this curve *smoothstep*), perfect for fades. `bump` is a spring that goes up and comes back down: a "pop".
 
 In the demo above you can change the damping and the frequency and see how the shape of the spring changes. The dot marks where the scene's main spring is at each instant.
 
@@ -128,7 +128,7 @@ public protocol MotionScene: Sendable {
 }
 ```
 
-**A canvas you copy.** `MotionCanvas` wraps SwiftUI's `GraphicsContext`, the colour scheme's palette and a few helpers (`circle`, `fill`, `text`, `image`). It's a value type, and that replaces the HTML canvas's `save()` and `restore()`: to change the opacity or the transform of one part, you copy it, change the copy and throw it away.
+**A canvas you copy.** `MotionCanvas` wraps SwiftUI's `GraphicsContext` (the object you draw with inside a `Canvas`), the colour scheme's palette and a few helpers (`circle`, `fill`, `text`, `image`). It's a value type (a `struct`: assigning it makes a copy), and that replaces the HTML canvas's `save()` and `restore()`, which save and restore the drawing state: to change the opacity or the transform of one part, you copy it, change the copy and throw it away.
 
 ```swift
 var coin = c                       // a copy: saves the state
@@ -137,7 +137,7 @@ coin.circle(CGPoint(x: p.x, y: y), 10.5, accent)
 // when this scope ends, `c` is as it was
 ```
 
-**A view that gives the scene its time.** It's a `Canvas` inside a `TimelineView` that scales the 360 × 280 box to the available space and calls `draw` with the right `t`:
+**A view that gives the scene its time.** It's a `Canvas` (SwiftUI's view for drawing by hand, like an HTML `<canvas>`) inside a `TimelineView` (a view that redraws on every frame and tells you the time). It scales the 360 × 280 box to the available space and calls `draw` with the right `t`:
 
 ```swift
 TimelineView(.animation(minimumInterval: 1 / 60, paused: !isLive || !isOnScreen)) { timeline in

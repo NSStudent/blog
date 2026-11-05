@@ -37,7 +37,7 @@
     <div class="stage mc" id="stage" data-scheme="dark"><canvas id="scene" role="img"></canvas></div>
     <div class="row">
       <button id="play" data-i18n="pause">Pausa</button>
-      <button id="still" class="ghost" aria-pressed="false">Reduce Motion</button>
+      <button id="still" class="ghost" aria-pressed="false" data-i18n="still_btn" data-i18n-title="still_help">Reducir movimiento</button>
       <span class="mono" id="state"></span>
     </div>
     <div class="row">
@@ -50,6 +50,7 @@
       <input id="speed" type="range" min="0.25" max="2" step="0.05" value="1">
       <span class="val" id="speedval">1.00×</span>
     </div>
+    <p class="mono" data-i18n="still_help"></p>
   </section>
   <section class="card">
     <h2 data-i18n="h_spring">El muelle: spring(x, w)</h2>
@@ -78,7 +79,8 @@ const LANG = params.get("lang") === "en" ? "en" : "es";
 const TX = {
   es: {
     title: "Escenas de MindChess · draw(t)", h_scene: "La escena: una función de t", a_pick: "Escena", coins: "Monedas → insignia", bots: "Encuentra tu rival",
-    pause: "Pausa", play: "Reproducir", speed: "velocidad", h_spring: "El muelle: spring(x, w)", a_curve: "Curva del muelle amortiguado",
+    pause: "Pausa", play: "Reproducir", still_btn: "Reducir movimiento",
+    still_help: "«Reducir movimiento» enseña el fotograma quieto que pinta la app cuando ese ajuste de accesibilidad de iOS está activado.", speed: "velocidad", h_spring: "El muelle: spring(x, w)", a_curve: "Curva del muelle amortiguado",
     damping: "amortiguación", freq: "frecuencia w", playing: "reproduciendo", paused: "en pausa: arrastra t", still: (s) => `fotograma quieto (stillTime = ${s})`,
     a_coins: "Diez monedas caen en un anillo y se funden en una insignia", a_bots: "Aparecen tres rivales, se elige a Sofía, se sienta junto al tablero y se juega 1.e4 e5",
     m_coins: "moneda 1", m_bots: "Sofía se sienta",
@@ -87,7 +89,8 @@ const TX = {
   },
   en: {
     title: "MindChess scenes · draw(t)", h_scene: "The scene: a function of t", a_pick: "Scene", coins: "Coins → badge", bots: "Find your rival",
-    pause: "Pause", play: "Play", speed: "speed", h_spring: "The spring: spring(x, w)", a_curve: "Damped spring curve",
+    pause: "Pause", play: "Play", still_btn: "Reduce Motion",
+    still_help: "“Reduce Motion” shows the still frame the app draws when that iOS accessibility setting is on.", speed: "speed", h_spring: "The spring: spring(x, w)", a_curve: "Damped spring curve",
     damping: "damping", freq: "frequency w", playing: "playing", paused: "paused: drag t", still: (s) => `still frame (stillTime = ${s})`,
     a_coins: "Ten coins drop into a ring and melt into a badge", a_bots: "Three rivals appear, Sofía is picked, she sits down by the board and 1.e4 e5 is played",
     m_coins: "coin 1", m_bots: "Sofía sits down",
@@ -99,6 +102,7 @@ const tr = (k) => TX[LANG][k];
 const num = (x, d) => LANG === "es" ? x.toFixed(d).replace(".", ",") : x.toFixed(d);
 document.documentElement.lang = LANG; document.title = tr("title");
 document.querySelectorAll("[data-i18n]").forEach((el) => { el.textContent = tr(el.dataset.i18n); });
+document.querySelectorAll("[data-i18n-title]").forEach((el) => { el.title = tr(el.dataset.i18nTitle); });
 document.querySelectorAll("[data-i18n-aria]").forEach((el) => { el.setAttribute("aria-label", tr(el.dataset.i18nAria)); });
 
 // ---- La curva que se marca en cada escena: el muelle que mueve la pieza principal ----

@@ -13,9 +13,9 @@ showTableOfContents: true
 
 Llevo un tiempo viendo cómo la gente hace motion graphics con IA. Desde que salió Opus 5.5, cada semana aparece alguien con un vídeo de producto, una intro animada o una explicación con tipografía en movimiento, y todo hecho describiendo lo que quiere a un agente que escribe el código.
 
-Después de ver unos cuantos, me pregunté otra cosa: **¿hay alguna forma de hacer esto mismo y llevarlo a SwiftUI nativo?** No quiero un vídeo dentro de la app. Quiero una escena que se dibuje en el dispositivo, con los colores del tema del usuario, que respete Reduce Motion y que pueda probar con snapshots.
+Después de ver unos cuantos, me pregunté otra cosa: **¿hay alguna forma de hacer esto mismo y llevarlo a SwiftUI nativo?** No quiero un vídeo dentro de la app. Quiero una escena que se dibuje en el dispositivo, con los colores del tema del usuario, que respete los ajustes de accesibilidad y que pueda probar con tests de capturas.
 
-Reduce Motion («Reducir movimiento» en español) es un ajuste de accesibilidad de iOS, en Ajustes › Accesibilidad › Movimiento. Lo activa la gente a la que las animaciones marean o distraen, y le pide a cada app que cambie el movimiento por algo quieto o más sencillo. Un vídeo no puede hacer eso. Una escena dibujada por la app sí: con el ajuste activado, en vez de animarse, enseña una sola imagen fija que cuenta lo mismo.
+El ajuste que más importa aquí es **Reducir movimiento** (*Reduce Motion* en inglés), en Ajustes › Accesibilidad › Movimiento. Lo activa la gente a la que las animaciones marean o distraen. Las apps lo leen (en SwiftUI, con el valor de entorno `accessibilityReduceMotion`) y deberían cambiar el movimiento por algo quieto o por un fundido simple. Un vídeo no puede hacer eso. Una escena dibujada por la app sí: con el ajuste activado, MindChess no la reproduce y pinta un solo fotograma fijo que ya cuenta la historia.
 
 Se puede, y este artículo cuenta cómo lo hago en MindChess. El onboarding y la pantalla de Novedades tienen pequeñas escenas animadas. Todas nacieron en HTML con un agente de IA, y todas pasaron a SwiftUI **sin usar ni una animación de SwiftUI**: ni `withAnimation`, ni `matchedGeometryEffect`, ni transiciones.
 
@@ -39,8 +39,8 @@ Todo lo que se ve se calcula a partir de `t`: dónde está cada pieza, su opacid
 
 Eso da tres cosas gratis:
 
-- **Snapshots deterministas:** pintar `draw(4.4)` da siempre la misma imagen.
-- **Reduce Motion:** en vez de animar, se pinta un único fotograma quieto que ya cuenta la historia.
+- **Tests de capturas deterministas** (los *snapshot tests*, que comparan una imagen de la vista con una guardada): pintar `draw(4.4)` da siempre la misma imagen.
+- **Reducir movimiento:** en vez de animar, se pinta un único fotograma quieto que ya cuenta la historia.
 - **Bucles sin costura:** si al final de la escena todo vuelve a opacidad cero, el segundo 0 y el último encajan.
 
 Y una cuarta que es la que importa aquí: **una función pura se traduce de un lenguaje a otro.** Si el prototipo es una función de JavaScript sin estado, el port a Swift es otra función con las mismas líneas.
@@ -49,7 +49,7 @@ Y una cuarta que es la que importa aquí: **una función pura se traduce de un l
 
 Todas las escenas se dibujan en una caja lógica de **360 × 280** puntos, y luego se escalan al hueco que les dé la pantalla. Así las coordenadas del prototipo y las de Swift son las mismas, número a número.
 
-Y todas siguen la misma gramática: **entrada → acción → resultado → reposo**. Algo aparece, pasa algo, se ve el resultado y la escena se queda quieta en un fotograma que lo resume. Ese fotograma de reposo (`stillTime`) es el que se pinta con Reduce Motion y en los snapshots, así que tiene que contar la historia él solo.
+Y todas siguen la misma gramática: **entrada → acción → resultado → reposo**. Algo aparece, pasa algo, se ve el resultado y la escena se queda quieta en un fotograma que lo resume. Ese fotograma de reposo es el segundo que cada escena declara como `stillTime`: es el que se pinta con Reducir movimiento y en los tests de capturas, así que tiene que contar la historia él solo.
 
 Esta gramática también es lo que le pido al agente. No le digo «hazme una animación bonita»: le digo qué pasa en cada fase y en qué segundo.
 
@@ -98,7 +98,7 @@ public enum Motion {
 }
 ```
 
-`spring` es la respuesta de un muelle con amortiguación 0,78: sube de 0 a 1, se pasa un poco y se asienta. El parámetro `w` decide lo rápido que lo hace. `smooth` es un smoothstep entre dos instantes, perfecto para fundidos. `bump` es un muelle que sube y baja: un «pop».
+`spring` es la respuesta de un muelle con amortiguación 0,78: sube de 0 a 1, se pasa un poco y se asienta. El parámetro `w` decide lo rápido que lo hace. `smooth` va de 0 a 1 entre dos instantes, arrancando y frenando suave (es la curva que en gráficos se llama *smoothstep*), perfecta para fundidos. `bump` es un muelle que sube y baja: un «pop».
 
 En la demo de arriba puedes cambiar la amortiguación y la frecuencia y ver cómo cambia la forma del muelle. El punto marca dónde está el muelle principal de la escena en cada instante.
 
@@ -128,7 +128,7 @@ public protocol MotionScene: Sendable {
 }
 ```
 
-**Un lienzo que se copia.** `MotionCanvas` envuelve el `GraphicsContext` de SwiftUI, la paleta del esquema de color y unos cuantos helpers (`circle`, `fill`, `text`, `image`). Es un tipo valor, y eso sustituye al `save()` y `restore()` del canvas de HTML: para cambiar la opacidad o la transformación de una parte, se copia, se cambia la copia y se tira.
+**Un lienzo que se copia.** `MotionCanvas` envuelve el `GraphicsContext` de SwiftUI (el objeto con el que se dibuja dentro de un `Canvas`), la paleta del esquema de color y unos cuantos helpers (`circle`, `fill`, `text`, `image`). Es un tipo valor (un `struct`: al asignarlo se copia), y eso sustituye al `save()` y `restore()` del canvas de HTML, que guardan y recuperan el estado del dibujo: para cambiar la opacidad o la transformación de una parte, se copia, se cambia la copia y se tira.
 
 ```swift
 var coin = c                       // copia: guarda el estado
@@ -137,7 +137,7 @@ coin.circle(CGPoint(x: p.x, y: y), 10.5, accent)
 // al salir de este ámbito, `c` sigue como estaba
 ```
 
-**Una vista que da tiempo a la escena.** Es un `Canvas` dentro de un `TimelineView`, que escala la caja de 360 × 280 al hueco disponible y llama a `draw` con el `t` que toque:
+**Una vista que da tiempo a la escena.** Es un `Canvas` (la vista de SwiftUI para dibujar a mano, como un `<canvas>` de HTML) dentro de un `TimelineView` (una vista que se vuelve a pintar en cada fotograma y te dice la hora). Escala la caja de 360 × 280 al hueco disponible y llama a `draw` con el `t` que toque:
 
 ```swift
 TimelineView(.animation(minimumInterval: 1 / 60, paused: !isLive || !isOnScreen)) { timeline in
