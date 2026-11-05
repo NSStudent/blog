@@ -15,7 +15,9 @@ Llevo un tiempo viendo cómo la gente hace motion graphics con IA. Desde que sal
 
 Después de ver unos cuantos, me pregunté otra cosa: **¿hay alguna forma de hacer esto mismo y llevarlo a SwiftUI nativo?** No quiero un vídeo dentro de la app. Quiero una escena que se dibuje en el dispositivo, como una vista más.
 
-Que la escena sea código y no un vídeo incrustado me da control sobre cosas que un vídeo no permite. Puedo cambiar la velocidad sin volver a exportar nada. La misma escena se pinta con los colores del modo claro o del oscuro, porque lee los colores de la app en ese momento. Y se puede adaptar al dispositivo: en el iPhone Duo no tiene sentido enseñar la misma animación con el móvil abierto que cerrado, y la escena del reloj, por ejemplo, enseña la bisagra de verdad cuando el Duo está en modo tabletop.
+Que la escena sea código y no un vídeo incrustado me da control sobre cosas que un vídeo no permite. Puedo cambiar la velocidad sin volver a exportar nada. La misma escena se pinta con los colores del modo claro o del oscuro, porque lee los colores de la app en ese momento. Y se puede adaptar al dispositivo: en el iPhone Duo no tiene sentido enseñar la misma animación con el móvil abierto que cerrado, y la escena del reloj, por ejemplo, enseña la bisagra de verdad cuando el Duo está en modo tabletop. Aquí lo puedes ver de las dos formas:
+
+{{< demo src="/demos/motion-clock/" height="380" title="La misma escena del reloj en un iPhone y en un iPhone Duo en tabletop: el código decide qué dibujar" >}}
 
 Hay otro caso que me parece todavía más interesante. Algunas personas activan en el sistema la opción **Reducir movimiento** (*Reduce Motion* en inglés), en Ajustes › Accesibilidad › Movimiento, porque las animaciones las marean o las distraen. Las apps pueden leer ese ajuste (en SwiftUI, con el valor de entorno `accessibilityReduceMotion`). Con un vídeo, lo único que puedes hacer es quitarlo. Con una escena en código, elijo un fotograma que ya cuente la historia y lo dejo como imagen fija, respetando la decisión de esa persona.
 
