@@ -1,15 +1,13 @@
 ---
 title: "Motion graphics with AI, but in native SwiftUI: the MindChess onboarding scenes"
-date: 2026-11-04
-draft: true
+date: 2026-11-05
+draft: false
 layout: simple
 description: "How I use AI to make motion graphics that end up in native SwiftUI: every scene is a pure function of time, prototyped on an HTML canvas with an agent and ported line by line to a SwiftUI Canvas. Two real cases from the MindChess onboarding."
 summary: "Everyone is making motion graphics with AI for videos. I wanted the same thing inside the app, in native SwiftUI. The key was writing every scene as a draw(t) function."
 tags: ["swiftui", "animations", "canvas", "ai", "mindchess"]
 showTableOfContents: true
 ---
-
-<!-- Draft 2026-11-05 on branch drafts/kit-y-animaciones. English version of index.es.md. Angle: uses of AI I haven't heard people talk about. Checked against the kit's design-iphone/assets/motion.js and the app's MotionKit.swift and MotionScenes. The demos run the kit's motion.js (static/demos/motion-scene/assets). -->
 
 For a while now I've been watching people make motion graphics with AI. Since Opus 5.5 came out, every week someone shows up with a product video, an animated intro or an explainer full of moving type, all of it made by describing what they want to an agent that writes the code.
 
