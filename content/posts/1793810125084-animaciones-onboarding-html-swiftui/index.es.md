@@ -21,7 +21,7 @@ Hay otro caso que me parece todavía más interesante. Algunas personas activan 
 
 Así son las escenas del onboarding y de la pantalla de Novedades de MindChess. Nacieron en HTML con un agente de IA. Después pasaron a SwiftUI **sin usar ni una animación de SwiftUI**, ni `withAnimation`, ni `matchedGeometryEffect`, ni transiciones.
 
-![Dos escenas de MindChess en su fotograma final: a la izquierda, la insignia ganada con 10/10; a la derecha, Sofía junto al tablero después de 1.e4 e5](dos-escenas.webp "Diez monedas que forjan una insignia y la elección de un rival con su primera jugada.")
+![Dos escenas de MindChess en su fotograma final: a la izquierda, la insignia ganada con 10/10; a la derecha, Sofía junto al tablero después de 1.e4 e5](dos-escenas.png "Diez monedas que forjan una insignia y la elección de un rival con su primera jugada.")
 
 Vamos a hablar de estos dos ejemplos.
 

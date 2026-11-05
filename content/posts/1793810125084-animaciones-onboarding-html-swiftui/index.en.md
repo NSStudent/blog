@@ -21,7 +21,7 @@ There's another case I find even more interesting. Some people turn on **Reduce 
 
 These are the scenes in the MindChess onboarding and What's New screen. They were born in HTML with an AI agent. Then they moved to SwiftUI **without a single SwiftUI animation**, no `withAnimation`, no `matchedGeometryEffect`, no transitions.
 
-![Two MindChess scenes at their final frame: on the left, the badge earned with 10/10; on the right, Sofía by the board after 1.e4 e5](dos-escenas.webp "Ten coins that forge a badge, and picking a rival who plays the first move.")
+![Two MindChess scenes at their final frame: on the left, the badge earned with 10/10; on the right, Sofía by the board after 1.e4 e5](dos-escenas.png "Ten coins that forge a badge, and picking a rival who plays the first move.")
 
 Let's talk about these two examples.
 
