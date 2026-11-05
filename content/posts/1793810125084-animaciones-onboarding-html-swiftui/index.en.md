@@ -15,6 +15,8 @@ For a while now I've been watching people make motion graphics with AI. Since Op
 
 After watching a few of them, I started wondering about something else: **is there a way to do the same thing and take it to native SwiftUI?** I don't want a video inside the app. I want a scene that's drawn on the device, in the user's theme colours, that respects Reduce Motion and that I can test with snapshots.
 
+Reduce Motion is an iOS accessibility setting, under Settings › Accessibility › Motion. People turn it on when animations make them dizzy or distract them, and it asks every app to swap motion for something still or simpler. A video can't do that. A scene the app draws itself can: with the setting on, instead of animating, it shows a single still image that tells the same story.
+
 It turns out you can, and this post is about how I do it in MindChess. The onboarding and the What's New screen have small animated scenes. They were all born in HTML with an AI agent, and they all moved to SwiftUI **without a single SwiftUI animation**: no `withAnimation`, no `matchedGeometryEffect`, no transitions.
 
 This is the real scene, running the prototype's own JavaScript. You can switch scenes, pause and scrub through time:
