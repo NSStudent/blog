@@ -1,9 +1,9 @@
 ---
-title: "Motion graphics con IA, pero en SwiftUI nativo: las escenas del onboarding de MindChess"
+title: "Animaciones en el onboarding de MindChess en SwiftUI gracias a la IA"
 date: 2026-11-05
 draft: false
 layout: simple
-description: "Cómo uso la IA para hacer motion graphics que acaban en SwiftUI nativo: cada escena es una función pura del tiempo, se prototipa en un canvas HTML con un agente y se porta a un Canvas de SwiftUI línea por línea. Dos casos reales del onboarding de MindChess."
+description: "Cómo hice las animaciones del onboarding de MindChess con IA y las llevé a SwiftUI nativo. Cada escena es una función del tiempo que se prototipa en HTML con un agente y se porta a un Canvas de SwiftUI."
 summary: "Todo el mundo hace motion graphics con IA para vídeos. Yo quería lo mismo dentro de la app, en SwiftUI nativo. La clave fue escribir cada escena como una función draw(t)."
 tags: ["swiftui", "animaciones", "canvas", "ia", "mindchess"]
 showTableOfContents: true
@@ -19,15 +19,17 @@ Que la escena sea código y no un vídeo incrustado me da control sobre cosas qu
 
 Hay otro caso que me parece todavía más interesante. Algunas personas activan en el sistema la opción **Reducir movimiento** (*Reduce Motion* en inglés), en Ajustes › Accesibilidad › Movimiento, porque las animaciones las marean o las distraen. Las apps pueden leer ese ajuste (en SwiftUI, con el valor de entorno `accessibilityReduceMotion`). Con un vídeo, lo único que puedes hacer es quitarlo. Con una escena en código, elijo un fotograma que ya cuente la historia y lo dejo como imagen fija, respetando la decisión de esa persona.
 
-Se puede, y este artículo cuenta cómo lo hago en MindChess. El onboarding y la pantalla de Novedades tienen pequeñas escenas animadas. Todas nacieron en HTML con un agente de IA, y todas pasaron a SwiftUI **sin usar ni una animación de SwiftUI**: ni `withAnimation`, ni `matchedGeometryEffect`, ni transiciones.
+Así son las escenas del onboarding y de la pantalla de Novedades de MindChess. Nacieron en HTML con un agente de IA. Después pasaron a SwiftUI **sin usar ni una animación de SwiftUI**, ni `withAnimation`, ni `matchedGeometryEffect`, ni transiciones.
 
-Primero cuento la idea y cómo se pasa a SwiftUI, y luego la aplico a dos escenas reales que puedes tocar en el navegador: la de la insignia y la de los bots.
+![Dos escenas de MindChess en su fotograma final: a la izquierda, la insignia ganada con 10/10; a la derecha, Sofía junto al tablero después de 1.e4 e5](dos-escenas.webp "Diez monedas que forjan una insignia y la elección de un rival con su primera jugada.")
+
+Vamos a hablar de estos dos ejemplos.
 
 ## La idea: una escena es una función del tiempo
 
 La forma habitual de animar en SwiftUI es declarar estados y dejar que el sistema interpole entre ellos. Funciona muy bien para la interfaz, pero para una escena de cinco segundos con quince cosas moviéndose a destiempo se vuelve una cadena de `DispatchQueue.main.asyncAfter`, estados intermedios y animaciones que se pisan.
 
-Los motion graphics que hace la gente con IA no funcionan así. Son una línea de tiempo: en el segundo 1,2 esto está aquí, en el 1,5 está allí. Así que copié esa idea. En las escenas de MindChess no hay estado. Hay una función:
+Los motion graphics que hace la gente con IA no funcionan así. Son una línea de tiempo. En el milisegundo 1200 esto está aquí y 300 milisegundos después, en el 1500, está allí. Así que copié esa idea. En las escenas de MindChess no hay estado. Hay una función:
 
 ```text
 draw(t) → el fotograma en el segundo t
@@ -37,9 +39,9 @@ Todo lo que se ve se calcula a partir de `t`: dónde está cada pieza, su opacid
 
 Eso da tres cosas gratis:
 
-- **Tests de capturas deterministas** (los *snapshot tests*, que comparan una imagen de la vista con una guardada): pintar `draw(4.4)` da siempre la misma imagen.
+- **Tests de capturas deterministas** (los *snapshot tests*, que comparan una imagen de la vista con una guardada): pintar `draw(4.4)`, el milisegundo 4400, da siempre la misma imagen.
 - **Reducir movimiento:** en vez de animar, se pinta un único fotograma quieto que ya cuenta la historia.
-- **Bucles sin costura:** si al final de la escena todo vuelve a opacidad cero, el segundo 0 y el último encajan.
+- **Bucles sin costura:** si al final de la escena todo vuelve a opacidad cero, el primer fotograma y el último encajan.
 
 Y una cuarta que es la que importa aquí: **una función pura se traduce de un lenguaje a otro.** Si el prototipo es una función de JavaScript sin estado, el port a Swift es otra función con las mismas líneas.
 
@@ -47,9 +49,9 @@ Y una cuarta que es la que importa aquí: **una función pura se traduce de un l
 
 Todas las escenas se dibujan en una caja lógica de **360 × 280** puntos, y luego se escalan al hueco que les dé la pantalla. Así las coordenadas del prototipo y las de Swift son las mismas, número a número.
 
-Y todas siguen la misma gramática: **entrada → acción → resultado → reposo**. Algo aparece, pasa algo, se ve el resultado y la escena se queda quieta en un fotograma que lo resume. Ese fotograma de reposo es el segundo que cada escena declara como `stillTime`: es el que se pinta con Reducir movimiento y en los tests de capturas, así que tiene que contar la historia él solo.
+Y todas siguen la misma gramática: **entrada → acción → resultado → reposo**. Algo aparece, pasa algo, se ve el resultado y la escena se queda quieta en un fotograma que lo resume. Ese fotograma de reposo es el instante que cada escena declara como `stillTime`. Es el que se pinta con Reducir movimiento y en los tests de capturas, así que tiene que contar la historia él solo.
 
-Esta gramática también es lo que le pido al agente. No le digo «hazme una animación bonita»: le digo qué pasa en cada fase y en qué segundo.
+Esta gramática también es lo que le pido al agente. No le digo «hazme una animación bonita». Le digo qué pasa en cada fase y en qué milisegundo.
 
 ## Curvas en forma cerrada
 
@@ -96,7 +98,7 @@ public enum Motion {
 }
 ```
 
-`spring` es la respuesta de un muelle con amortiguación 0,78: sube de 0 a 1, se pasa un poco y se asienta. El parámetro `w` decide lo rápido que lo hace. `smooth` va de 0 a 1 entre dos instantes, arrancando y frenando suave (es la curva que en gráficos se llama *smoothstep*), perfecta para fundidos. `bump` es un muelle que sube y baja: un «pop».
+`spring` es la respuesta de un muelle con una amortiguación de 0,78. Sube de 0 a 1, se pasa un poco y se asienta. El parámetro `w` decide lo rápido que lo hace. `smooth` va de 0 a 1 entre dos instantes, arrancando y frenando suave (es la curva que en gráficos se llama *smoothstep*), perfecta para fundidos. `bump` es un muelle que sube y baja, un «pop».
 
 En las demos de los dos casos, más abajo, puedes cambiar la amortiguación y la frecuencia y ver cómo cambia la forma del muelle. El punto marca dónde está el muelle principal de la escena en cada instante.
 
@@ -104,8 +106,8 @@ En las demos de los dos casos, más abajo, puedes cambiar la amortiguación y la
 
 El prototipo vive en el kit de diseño de MindChess, en un archivo de escenas en JavaScript (`motion.js`). Cada escena es una función que recibe el contexto de un `<canvas>` y `t`. Escribirlas con un agente de IA funciona especialmente bien, por tres motivos:
 
-1. **La descripción en lenguaje natural ya es casi el código.** «Diez monedas en un anillo de radio 88; cae una cada 0,2 s desde 64 pt más arriba con un muelle de frecuencia 16» se traduce casi literalmente.
-2. **Se itera mirando el navegador.** Recargo, arrastro el tiempo hasta el momento que no me gusta y le digo al agente qué cambiar en ese segundo concreto.
+1. **La descripción en lenguaje natural ya es casi el código.** «Diez monedas en un anillo de radio 88; cae una cada 200 milisegundos desde 64 pt más arriba con un muelle de frecuencia 16» se traduce casi literalmente.
+2. **Se itera mirando el navegador.** Recargo, arrastro el tiempo hasta el momento que no me gusta y le digo al agente qué cambiar en ese instante concreto.
 3. **Los datos son reales.** Los colores salen de los tokens de la app, las piezas son las del juego y los avatares son los de los bots de verdad.
 
 Y luego el mismo agente hace el port. Le paso la escena de JavaScript y el kit de Swift, y como las dos son funciones puras con las mismas curvas, el resultado sale casi a la primera.
@@ -126,7 +128,7 @@ public protocol MotionScene: Sendable {
 }
 ```
 
-**Un lienzo que se copia.** `MotionCanvas` envuelve el `GraphicsContext` de SwiftUI (el objeto con el que se dibuja dentro de un `Canvas`), la paleta del esquema de color y unos cuantos helpers (`circle`, `fill`, `text`, `image`). Es un tipo valor (un `struct`: al asignarlo se copia), y eso sustituye al `save()` y `restore()` del canvas de HTML, que guardan y recuperan el estado del dibujo: para cambiar la opacidad o la transformación de una parte, se copia, se cambia la copia y se tira.
+**Un lienzo que se copia.** `MotionCanvas` envuelve el `GraphicsContext` de SwiftUI (el objeto con el que se dibuja dentro de un `Canvas`), la paleta del esquema de color y unos cuantos helpers (`circle`, `fill`, `text`, `image`). Es un tipo valor (un `struct`: al asignarlo se copia), y eso sustituye al `save()` y `restore()` del canvas de HTML, que guardan y recuperan el estado del dibujo. Para cambiar la opacidad o la transformación de una parte, se copia, se cambia la copia y se tira.
 
 ```swift
 var coin = c                       // copia: guarda el estado
@@ -148,7 +150,7 @@ TimelineView(.animation(minimumInterval: 1 / 60, paused: !isLive || !isOnScreen)
 }
 ```
 
-Con eso, veamos dos escenas reales.
+Con eso, volvamos a los dos ejemplos del principio.
 
 ## Caso 1: diez monedas que forjan una insignia
 
@@ -156,12 +158,12 @@ La primera es del onboarding: cada partida que juegas es una moneda, y diez mone
 
 | Fase | Tiempo | Qué pasa |
 |---|---|---|
-| Entrada | 0–0,25 s | Aparece el anillo de diez huecos |
-| Acción | 0,35–2,15 s | Cae una moneda cada 0,2 s y el contador sube |
-| Resultado | 2,75–4,0 s | El anillo se funde, la insignia gira y se gana, salen chispas |
-| Reposo | 4,4 s | El fotograma quieto: la insignia y «10/10» |
+| Entrada | 0–250 ms | Aparece el anillo de diez huecos |
+| Acción | 350–2150 ms | Cae una moneda cada 200 ms y el contador sube |
+| Resultado | 2750–4000 ms | El anillo se funde, la insignia gira y se gana, salen chispas |
+| Reposo | 4400 ms (`stillTime = 4.4`) | El fotograma quieto, con la insignia y «10/10» |
 
-![Cinco fotogramas de la escena de las monedas: a 0,45 s el anillo vacío y la primera moneda cayendo; a 1,1 s cuatro monedas; a 2 s ocho; a 3,05 s el anillo se funde alrededor de la insignia; a 4,4 s la insignia ganada](coins-frames.png "La misma función en cinco instantes. A 4,4 s, el fotograma quieto.")
+![Cinco fotogramas de la escena de las monedas: a los 450 ms el anillo vacío y la primera moneda cayendo; a los 1100 ms cuatro monedas; a los 2000 ms ocho; a los 3050 ms el anillo se funde alrededor de la insignia; a los 4400 ms la insignia ganada](coins-frames.png "La misma función en cinco instantes. A los 4400 ms, el fotograma quieto.")
 
 Esta es la escena real, ejecutando el mismo código JavaScript del prototipo. Puedes pararla y moverte por el tiempo:
 
@@ -221,18 +223,18 @@ La segunda es de la 1.4, para presentar los bots. Tres rivales, uno por nivel. S
 
 | Fase | Tiempo | Qué pasa |
 |---|---|---|
-| Entrada | 0–0,6 s | Aparecen las tres tarjetas, una detrás de otra |
-| Acción | 1,35–2,4 s | Sofía se ilumina, los otros dos se van, ella va a su sitio y aparece el tablero |
-| Resultado | 2,75–3,9 s | 1.e4; Sofía piensa (los tres puntos) y responde 1…e5 |
-| Reposo | 4,6 s | El fotograma quieto: Sofía junto al tablero con la última jugada marcada |
+| Entrada | 0–600 ms | Aparecen las tres tarjetas, una detrás de otra |
+| Acción | 1350–2400 ms | Sofía se ilumina, los otros dos se van, ella va a su sitio y aparece el tablero |
+| Resultado | 2750–3900 ms | 1.e4, Sofía piensa (los tres puntos) y responde 1…e5 |
+| Reposo | 4600 ms (`stillTime = 4.6`) | El fotograma quieto, con Sofía junto al tablero y la última jugada marcada |
 
-![Cinco fotogramas de la escena de los bots: a 0,6 s las tres tarjetas de Pip, Sofía y Viktor; a 1,5 s Sofía elegida con su borde iluminado; a 2,5 s Sofía junto al tablero en la posición inicial; a 3,3 s tras 1.e4, con Sofía pensando; a 4,6 s tras 1…e5](bots-frames.webp "La escena de los bots en cinco instantes. Los avatares y las piezas son los de la app.")
+![Cinco fotogramas de la escena de los bots: a los 600 ms las tres tarjetas de Pip, Sofía y Viktor; a los 1500 ms Sofía elegida con su borde iluminado; a los 2500 ms Sofía junto al tablero en la posición inicial; a los 3300 ms tras 1.e4, con Sofía pensando; a los 4600 ms tras 1…e5](bots-frames.webp "La escena de los bots en cinco instantes. Los avatares y las piezas son los de la app.")
 
 Y aquí, funcionando, con el mismo control del tiempo:
 
 {{< demo src="/demos/motion-scene/?scene=bots" height="640" title="La escena de los bots: tres rivales, se elige uno y se juega 1.e4 e5" >}}
 
-Lo interesante de esta escena es cómo se reparte el trabajo entre funciones. El tablero es una función aparte, `playBoard`, que recibe una posición y una lista de jugadas con el segundo en que se juega cada una. Cada jugada es un muelle de la casilla de salida a la de llegada, y la última se marca en amarillo, como en la app. La escena solo dice qué jugadas y cuándo:
+Lo interesante de esta escena es cómo se reparte el trabajo entre funciones. El tablero es una función aparte, `playBoard`, que recibe una posición y una lista de jugadas con el instante en que se juega cada una. Cada jugada es un muelle de la casilla de salida a la de llegada, y la última se marca en amarillo, como en la app. La escena solo dice qué jugadas y cuándo:
 
 ```swift
 struct BotsScene: MotionScene {
@@ -284,14 +286,14 @@ public enum MotionPlayback: Equatable, Sendable {
 }
 ```
 
-Los snapshots del onboarding y de Novedades pintan cada escena en su fotograma quieto, en claro y oscuro, en el iPhone y en cada postura del Duo. Si alguien cambia una curva y la insignia ya no queda centrada en el segundo 4,4, el test falla.
+Los snapshots del onboarding y de Novedades pintan cada escena en su fotograma quieto, en claro y oscuro, en el iPhone y en cada postura del Duo. Si alguien cambia una curva y la insignia ya no queda centrada en el milisegundo 4400, el test falla.
 
 ## Lo que me llevo
 
 - **La IA no solo sirve para hacer vídeos con motion graphics.** Si le pides la escena como una función del tiempo, el resultado se puede llevar a código nativo.
 - **Una función del tiempo es más fácil de razonar que una cadena de animaciones.** Y se puede ir a cualquier instante para depurarla.
 - **Las fórmulas cerradas viajan bien entre lenguajes.** Las curvas de JavaScript y las de Swift son las mismas líneas con otra sintaxis, y el port lo hace el mismo agente.
-- **Prototipar en el navegador con un agente es muy rápido** cuando puedes señalar un segundo concreto y decir qué falla.
+- **Prototipar en el navegador con un agente es muy rápido** cuando puedes señalar un instante concreto y decir qué falla.
 - **Accesibilidad y tests salen solos** si el fotograma quieto cuenta la historia.
 
 {{< promo "mindchess" >}}

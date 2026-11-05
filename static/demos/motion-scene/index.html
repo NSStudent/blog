@@ -44,7 +44,7 @@
     <div class="row">
       <label for="t">t</label>
       <input id="t" type="range" min="0" max="6" step="0.01" value="0">
-      <span class="val" id="tval">0.00 s</span>
+      <span class="val" id="tval">0 ms</span>
     </div>
     <div class="row">
       <label for="speed" data-i18n="speed">velocidad</label>
@@ -82,7 +82,7 @@ const TX = {
     title: "Escenas de MindChess · draw(t)", h_scene: "La escena: una función de t", a_pick: "Escena", coins: "Monedas → insignia", bots: "Encuentra tu rival",
     pause: "Pausa", play: "Reproducir", still_btn: "Reducir movimiento",
     still_help: "«Reducir movimiento» enseña el fotograma quieto que pinta la app cuando ese ajuste de accesibilidad de iOS está activado.", speed: "velocidad", h_spring: "El muelle: spring(x, w)", a_curve: "Curva del muelle amortiguado",
-    damping: "amortiguación", freq: "frecuencia w", playing: "reproduciendo", paused: "en pausa: arrastra t", still: (s) => `fotograma quieto (stillTime = ${s})`,
+    damping: "amortiguación", freq: "frecuencia w", playing: "reproduciendo", paused: "en pausa: arrastra t", still: (s) => `fotograma quieto (stillTime, ${s})`,
     a_coins: "Diez monedas caen en un anillo y se funden en una insignia", a_bots: "Aparecen tres rivales, se elige a Sofía, se sienta junto al tablero y se juega 1.e4 e5",
     m_coins: "moneda 1", m_bots: "Sofía se sienta",
     n_coins: "Las escenas usan siempre 0,78. Las monedas caen con w = 16 y el anillo se funde con w = 10. Aquí puedes ver cómo cambia la forma del muelle.",
@@ -92,7 +92,7 @@ const TX = {
     title: "MindChess scenes · draw(t)", h_scene: "The scene: a function of t", a_pick: "Scene", coins: "Coins → badge", bots: "Find your rival",
     pause: "Pause", play: "Play", still_btn: "Reduce Motion",
     still_help: "“Reduce Motion” shows the still frame the app draws when that iOS accessibility setting is on.", speed: "speed", h_spring: "The spring: spring(x, w)", a_curve: "Damped spring curve",
-    damping: "damping", freq: "frequency w", playing: "playing", paused: "paused: drag t", still: (s) => `still frame (stillTime = ${s})`,
+    damping: "damping", freq: "frequency w", playing: "playing", paused: "paused: drag t", still: (s) => `still frame (stillTime, ${s})`,
     a_coins: "Ten coins drop into a ring and melt into a badge", a_bots: "Three rivals appear, Sofía is picked, she sits down by the board and 1.e4 e5 is played",
     m_coins: "coin 1", m_bots: "Sofía sits down",
     n_coins: "The scenes always use 0.78. The coins drop with w = 16 and the ring melts with w = 10. Here you can see how the shape of the spring changes.",
@@ -100,7 +100,6 @@ const TX = {
   },
 };
 const tr = (k) => TX[LANG][k];
-const num = (x, d) => LANG === "es" ? x.toFixed(d).replace(".", ",") : x.toFixed(d);
 document.documentElement.lang = LANG; document.title = tr("title");
 document.querySelectorAll("[data-i18n]").forEach((el) => { el.textContent = tr(el.dataset.i18n); });
 document.querySelectorAll("[data-i18n-title]").forEach((el) => { el.title = tr(el.dataset.i18nTitle); });
@@ -142,8 +141,8 @@ function pick(n) {
 function render() {
   const time = reduceMotion ? def.still : t;
   M.render(sc, time);
-  tInput.value = time; tval.textContent = time.toFixed(2) + " s";
-  stateEl.textContent = reduceMotion ? tr("still")(num(def.still, 1) + " s") : playing ? tr("playing") : tr("paused");
+  tInput.value = time; tval.textContent = Math.round(time * 1000) + " ms";
+  stateEl.textContent = reduceMotion ? tr("still")(Math.round(def.still * 1000) + " ms") : playing ? tr("playing") : tr("paused");
   drawCurve(time);
 }
 function tick(now) {
@@ -168,7 +167,7 @@ function drawCurve(time) {
   cctx.strokeStyle = css("--line"); cctx.lineWidth = 1;
   [0, 1].forEach(y => { cctx.beginPath(); cctx.moveTo(pad, py(y)); cctx.lineTo(W - pad, py(y)); cctx.stroke(); });
   cctx.fillStyle = css("--text2"); cctx.font = "22px ui-monospace, Menlo, monospace";
-  cctx.fillText("1", 8, py(1) + 7); cctx.fillText("0", 8, py(0) + 7); cctx.fillText(num(X, 1) + " s", W - pad - 60, H - 8);
+  cctx.fillText("1", 8, py(1) + 7); cctx.fillText("0", 8, py(0) + 7); cctx.fillText(Math.round(X * 1000) + " ms", W - pad - 90, H - 8);
   cctx.beginPath();
   for (let i = 0; i <= 240; i++) { const x = i / 240 * X, y = spring(x, W_CURVE); i ? cctx.lineTo(px(x), py(y)) : cctx.moveTo(px(x), py(y)); }
   cctx.strokeStyle = css("--accent"); cctx.lineWidth = 4; cctx.stroke();
