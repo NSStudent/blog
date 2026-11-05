@@ -19,11 +19,7 @@ The setting that matters most here is **Reduce Motion**, under Settings › Acce
 
 It turns out you can, and this post is about how I do it in MindChess. The onboarding and the What's New screen have small animated scenes. They were all born in HTML with an AI agent, and they all moved to SwiftUI **without a single SwiftUI animation**: no `withAnimation`, no `matchedGeometryEffect`, no transitions.
 
-This is the real scene, running the prototype's own JavaScript. You can switch scenes, pause and scrub through time:
-
-{{< demo src="/demos/motion-scene/" height="680" title="The MindChess onboarding scenes in the browser: scrub through time and play with the spring" >}}
-
-Drag `t` and you'll see you can jump to any instant, forwards or backwards. That's the whole idea.
+First I'll explain the idea and how it gets to SwiftUI, and then I'll apply it to two real scenes you can play with in the browser: the badge and the bots.
 
 ## The idea: a scene is a function of time
 
@@ -100,7 +96,7 @@ public enum Motion {
 
 `spring` is the response of a spring with 0.78 damping: it goes from 0 to 1, overshoots a little and settles. The `w` parameter sets how fast. `smooth` goes from 0 to 1 between two instants, easing in and out (graphics people call this curve *smoothstep*), perfect for fades. `bump` is a spring that goes up and comes back down: a "pop".
 
-In the demo above you can change the damping and the frequency and see how the shape of the spring changes. The dot marks where the scene's main spring is at each instant.
+In the demos for both cases, further down, you can change the damping and the frequency and see how the shape of the spring changes. The dot marks where the scene's main spring is at each instant.
 
 ## Prototyping in the browser with AI
 
@@ -165,6 +161,12 @@ The first one is from the onboarding: every game you play is a coin, and ten coi
 
 ![Five frames of the coin scene: at 0.45 s the empty ring and the first coin dropping; at 1.1 s four coins; at 2 s eight; at 3.05 s the ring melting around the badge; at 4.4 s the badge earned](coins-frames.png "The same function at five instants. At 4.4 s, the still frame.")
 
+This is the real scene, running the prototype's own JavaScript. You can pause it and scrub through time:
+
+{{< demo src="/demos/motion-scene/?scene=coins" height="640" title="The badge scene in the browser: scrub through time and play with the spring" >}}
+
+Drag `t` and you'll see you can jump to any instant, forwards or backwards. That's the whole idea.
+
 This is the prototype (trimmed):
 
 ```js
@@ -224,9 +226,9 @@ The second one is from 1.4, to introduce the bots. Three rivals, one per level. 
 
 ![Five frames of the bots scene: at 0.6 s the three cards for Pip, Sofía and Viktor; at 1.5 s Sofía picked, with her border lit; at 2.5 s Sofía by the board in the starting position; at 3.3 s after 1.e4, with Sofía thinking; at 4.6 s after 1…e5](bots-frames.webp "The bots scene at five instants. The avatars and pieces are the app's.")
 
-You can watch it on its own in the browser:
+And here it is running, with the same time controls:
 
-{{< demo src="/demos/motion-scene/?scene=bots" height="680" title="The bots scene: three rivals, one is picked and 1.e4 e5 is played" >}}
+{{< demo src="/demos/motion-scene/?scene=bots" height="640" title="The bots scene: three rivals, one is picked and 1.e4 e5 is played" >}}
 
 What's interesting about this scene is how the work is split between functions. The board is a separate function, `playBoard`, that takes a position and a list of moves with the second each one is played. Each move is a spring from the source square to the destination square, and the last one is highlighted in yellow, as in the app. The scene only says which moves and when:
 

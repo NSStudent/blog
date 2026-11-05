@@ -19,11 +19,7 @@ El ajuste que más importa aquí es **Reducir movimiento** (*Reduce Motion* en i
 
 Se puede, y este artículo cuenta cómo lo hago en MindChess. El onboarding y la pantalla de Novedades tienen pequeñas escenas animadas. Todas nacieron en HTML con un agente de IA, y todas pasaron a SwiftUI **sin usar ni una animación de SwiftUI**: ni `withAnimation`, ni `matchedGeometryEffect`, ni transiciones.
 
-Esta es la escena real, ejecutando el mismo código JavaScript del prototipo. Puedes cambiar de escena, pararla y moverte por el tiempo:
-
-{{< demo src="/demos/motion-scene/" height="680" title="Las escenas del onboarding de MindChess en el navegador: muévete por el tiempo y toca el muelle" >}}
-
-Arrastra `t` y verás que puedes ir a cualquier instante, hacia delante o hacia atrás. Esa es toda la idea.
+Primero cuento la idea y cómo se pasa a SwiftUI, y luego la aplico a dos escenas reales que puedes tocar en el navegador: la de la insignia y la de los bots.
 
 ## La idea: una escena es una función del tiempo
 
@@ -100,7 +96,7 @@ public enum Motion {
 
 `spring` es la respuesta de un muelle con amortiguación 0,78: sube de 0 a 1, se pasa un poco y se asienta. El parámetro `w` decide lo rápido que lo hace. `smooth` va de 0 a 1 entre dos instantes, arrancando y frenando suave (es la curva que en gráficos se llama *smoothstep*), perfecta para fundidos. `bump` es un muelle que sube y baja: un «pop».
 
-En la demo de arriba puedes cambiar la amortiguación y la frecuencia y ver cómo cambia la forma del muelle. El punto marca dónde está el muelle principal de la escena en cada instante.
+En las demos de los dos casos, más abajo, puedes cambiar la amortiguación y la frecuencia y ver cómo cambia la forma del muelle. El punto marca dónde está el muelle principal de la escena en cada instante.
 
 ## Prototipar en el navegador con IA
 
@@ -165,6 +161,12 @@ La primera es del onboarding: cada partida que juegas es una moneda, y diez mone
 
 ![Cinco fotogramas de la escena de las monedas: a 0,45 s el anillo vacío y la primera moneda cayendo; a 1,1 s cuatro monedas; a 2 s ocho; a 3,05 s el anillo se funde alrededor de la insignia; a 4,4 s la insignia ganada](coins-frames.png "La misma función en cinco instantes. A 4,4 s, el fotograma quieto.")
 
+Esta es la escena real, ejecutando el mismo código JavaScript del prototipo. Puedes pararla y moverte por el tiempo:
+
+{{< demo src="/demos/motion-scene/?scene=coins" height="640" title="La escena de la insignia en el navegador: muévete por el tiempo y toca el muelle" >}}
+
+Arrastra `t` y verás que puedes ir a cualquier instante, hacia delante o hacia atrás. Esa es toda la idea.
+
 Así es en el prototipo (reducida):
 
 ```js
@@ -224,9 +226,9 @@ La segunda es de la 1.4, para presentar los bots. Tres rivales, uno por nivel. S
 
 ![Cinco fotogramas de la escena de los bots: a 0,6 s las tres tarjetas de Pip, Sofía y Viktor; a 1,5 s Sofía elegida con su borde iluminado; a 2,5 s Sofía junto al tablero en la posición inicial; a 3,3 s tras 1.e4, con Sofía pensando; a 4,6 s tras 1…e5](bots-frames.webp "La escena de los bots en cinco instantes. Los avatares y las piezas son los de la app.")
 
-La puedes ver sola en el navegador:
+Y aquí, funcionando, con el mismo control del tiempo:
 
-{{< demo src="/demos/motion-scene/?scene=bots" height="680" title="La escena de los bots: tres rivales, se elige uno y se juega 1.e4 e5" >}}
+{{< demo src="/demos/motion-scene/?scene=bots" height="640" title="La escena de los bots: tres rivales, se elige uno y se juega 1.e4 e5" >}}
 
 Lo interesante de esta escena es cómo se reparte el trabajo entre funciones. El tablero es una función aparte, `playBoard`, que recibe una posición y una lista de jugadas con el segundo en que se juega cada una. Cada jugada es un muelle de la casilla de salida a la de llegada, y la última se marca en amarillo, como en la app. La escena solo dice qué jugadas y cuándo:
 

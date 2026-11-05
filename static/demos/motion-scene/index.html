@@ -30,7 +30,7 @@
 <div class="wrap">
   <section class="card">
     <h2 data-i18n="h_scene">La escena: una función de t</h2>
-    <div class="row" style="margin:0 0 8px" role="group" data-i18n-aria="a_pick" aria-label="Escena">
+    <div class="row" id="picker" style="margin:0 0 8px" role="group" data-i18n-aria="a_pick" aria-label="Escena">
       <button class="ghost" data-scene="coins" data-i18n="coins">Monedas → insignia</button>
       <button class="ghost" data-scene="bots" data-i18n="bots">Encuentra tu rival</button>
     </div>
@@ -123,6 +123,8 @@ const tInput = document.getElementById("t"), tval = document.getElementById("tva
 const playBtn = document.getElementById("play"), stillBtn = document.getElementById("still"), stateEl = document.getElementById("state");
 const speedInput = document.getElementById("speed"), speedval = document.getElementById("speedval");
 let name = params.get("scene") === "bots" ? "bots" : "coins", def;
+// con ?scene= la escena queda fija (el blog pone cada una en su sitio); sin él, se puede elegir
+if (params.has("scene")) document.getElementById("picker").hidden = true;
 let playing = true, reduceMotion = false, t = 0, last = performance.now(), speed = 1;
 
 function pick(n) {
