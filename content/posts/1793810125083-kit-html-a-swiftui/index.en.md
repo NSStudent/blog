@@ -7,7 +7,13 @@ description: "How MindChess is designed: an HTML kit written with AI agents that
 summary: "Every MindChess screen exists first as a JavaScript function in an HTML kit that shares its numbers with the app. That is how a prototype becomes SwiftUI without design and code drifting apart."
 tags: ["swiftui", "design system", "ai", "mindchess"]
 showTableOfContents: true
+build:
+  render: never
+  list: never
+  publishResources: false
 ---
+
+<!-- Hidden: this post is never rendered, listed or published, not even with drafts (build). The kit-explorer demo lives in demo/kit-explorer.html.txt inside the bundle (.txt so Hugo does not treat it as a page); when publishing, move it back to static/demos/kit-explorer/index.html. -->
 
 <!-- Draft 2026-11-04 on branch drafts/kit-y-animaciones. English version of index.es.md. Figures checked against the kit (CCoach-minchess-migration) on 4 Nov; images taken from the kit and the app, whose UI is in Spanish. -->
 

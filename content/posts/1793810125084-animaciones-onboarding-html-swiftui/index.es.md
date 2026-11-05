@@ -1,35 +1,39 @@
 ---
-title: "Paso a paso: las animaciones del onboarding de MindChess, de HTML a SwiftUI"
+title: "Motion graphics con IA, pero en SwiftUI nativo: las escenas del onboarding de MindChess"
 date: 2026-11-04
 draft: true
 layout: simple
-description: "Cómo se hicieron las escenas animadas del onboarding de MindChess: prototipadas en un canvas HTML como una función pura del tiempo y portadas a un Canvas de SwiftUI con la misma función."
-summary: "Una escena animada es una función draw(t). Así se prototipa en un canvas HTML con IA y se porta a SwiftUI sin usar sus animaciones, con snapshots y Reduce Motion gratis."
+description: "Cómo uso la IA para hacer motion graphics que acaban en SwiftUI nativo: cada escena es una función pura del tiempo, se prototipa en un canvas HTML con un agente y se porta a un Canvas de SwiftUI línea por línea. Dos casos reales del onboarding de MindChess."
+summary: "Todo el mundo hace motion graphics con IA para vídeos. Yo quería lo mismo dentro de la app, en SwiftUI nativo. La clave fue escribir cada escena como una función draw(t)."
 tags: ["swiftui", "animaciones", "canvas", "ia", "mindchess"]
 showTableOfContents: true
 ---
 
-<!-- Borrador 2026-11-04 en la rama drafts/kit-y-animaciones. Cotejado con design-iphone/assets/motion.js el 4 nov; fotogramas sacados del kit. Pendiente: GIF o vídeo de la escena en la app. -->
+<!-- Borrador 2026-11-05 en la rama drafts/kit-y-animaciones. Enfoque: usos de la IA de los que no he oído hablar. Cotejado con design-iphone/assets/motion.js del kit y con MotionKit.swift y MotionScenes de la app. Las demos ejecutan el motion.js del kit (static/demos/motion-scene/assets). -->
 
-El onboarding y la pantalla de Novedades de MindChess tienen pequeñas escenas animadas: diez monedas que caen en un anillo y se funden en una insignia, un tablero de papel que se endereza y se convierte en el de la app, tres rivales de los que eliges uno y te responde 1…e5.
+Llevo un tiempo viendo cómo la gente hace motion graphics con IA. Desde que salió Opus 5.5, cada semana aparece alguien con un vídeo de producto, una intro animada o una explicación con tipografía en movimiento, y todo hecho describiendo lo que quiere a un agente que escribe el código.
 
-Todas nacieron en HTML, en el mismo kit de diseño del [artículo anterior](../1793810125083-kit-html-a-swiftui/), y todas pasaron a SwiftUI **sin usar ni una animación de SwiftUI**: ni `withAnimation`, ni `matchedGeometryEffect`, ni transiciones. Este artículo cuenta el proceso paso a paso con una de ellas, la de las monedas, que puedes tocar aquí mismo:
+Después de ver unos cuantos, me pregunté otra cosa: **¿hay alguna forma de hacer esto mismo y llevarlo a SwiftUI nativo?** No quiero un vídeo dentro de la app. Quiero una escena que se dibuje en el dispositivo, con los colores del tema del usuario, que respete Reduce Motion y que pueda probar con snapshots.
 
-{{< demo src="/demos/motion-scene/" height="620" title="La escena de las monedas en el navegador: muévete por el tiempo y toca el muelle" >}}
+Se puede, y este artículo cuenta cómo lo hago en MindChess. El onboarding y la pantalla de Novedades tienen pequeñas escenas animadas. Todas nacieron en HTML con un agente de IA, y todas pasaron a SwiftUI **sin usar ni una animación de SwiftUI**: ni `withAnimation`, ni `matchedGeometryEffect`, ni transiciones.
+
+Esta es la escena real, ejecutando el mismo código JavaScript del prototipo. Puedes cambiar de escena, pararla y moverte por el tiempo:
+
+{{< demo src="/demos/motion-scene/" height="680" title="Las escenas del onboarding de MindChess en el navegador: muévete por el tiempo y toca el muelle" >}}
 
 Arrastra `t` y verás que puedes ir a cualquier instante, hacia delante o hacia atrás. Esa es toda la idea.
 
-## Paso 1: una escena es una función del tiempo
+## La idea: una escena es una función del tiempo
 
 La forma habitual de animar en SwiftUI es declarar estados y dejar que el sistema interpole entre ellos. Funciona muy bien para la interfaz, pero para una escena de cinco segundos con quince cosas moviéndose a destiempo se vuelve una cadena de `DispatchQueue.main.asyncAfter`, estados intermedios y animaciones que se pisan.
 
-En las escenas de MindChess no hay estado. Hay una función:
+Los motion graphics que hace la gente con IA no funcionan así. Son una línea de tiempo: en el segundo 1,2 esto está aquí, en el 1,5 está allí. Así que copié esa idea. En las escenas de MindChess no hay estado. Hay una función:
 
 ```text
 draw(t) → el fotograma en el segundo t
 ```
 
-Todo lo que se ve se calcula a partir de `t`: dónde está cada moneda, su opacidad, el tamaño de la insignia, cuántas monedas lleva el contador. Nada depende del fotograma anterior.
+Todo lo que se ve se calcula a partir de `t`: dónde está cada pieza, su opacidad, su tamaño, qué jugada se ha hecho. Nada depende del fotograma anterior.
 
 Eso da tres cosas gratis:
 
@@ -37,40 +41,32 @@ Eso da tres cosas gratis:
 - **Reduce Motion:** en vez de animar, se pinta un único fotograma quieto que ya cuenta la historia.
 - **Bucles sin costura:** si al final de la escena todo vuelve a opacidad cero, el segundo 0 y el último encajan.
 
-## Paso 2: una caja fija y una gramática
+Y una cuarta que es la que importa aquí: **una función pura se traduce de un lenguaje a otro.** Si el prototipo es una función de JavaScript sin estado, el port a Swift es otra función con las mismas líneas.
+
+## Una caja fija y una gramática
 
 Todas las escenas se dibujan en una caja lógica de **360 × 280** puntos, y luego se escalan al hueco que les dé la pantalla. Así las coordenadas del prototipo y las de Swift son las mismas, número a número.
 
-Y todas siguen la misma gramática: **entrada → acción → resultado → reposo**. En la de las monedas:
+Y todas siguen la misma gramática: **entrada → acción → resultado → reposo**. Algo aparece, pasa algo, se ve el resultado y la escena se queda quieta en un fotograma que lo resume. Ese fotograma de reposo (`stillTime`) es el que se pinta con Reduce Motion y en los snapshots, así que tiene que contar la historia él solo.
 
-| Fase | Tiempo | Qué pasa |
-|---|---|---|
-| Entrada | 0–0,25 s | Aparece el anillo de diez huecos |
-| Acción | 0,35–2,15 s | Cae una moneda cada 0,2 s y el contador sube |
-| Resultado | 2,75–3,7 s | El anillo se funde, la insignia gira y se gana, salen chispas |
-| Reposo | 4,4 s | El fotograma quieto: la insignia y «10/10» |
+Esta gramática también es lo que le pido al agente. No le digo «hazme una animación bonita»: le digo qué pasa en cada fase y en qué segundo.
 
-El fotograma de reposo (`stillTime`) es el que se pinta con Reduce Motion y en los snapshots, así que tiene que contar la historia él solo.
+## Curvas en forma cerrada
 
-Estos son cinco fotogramas de la escena del kit, pintados con `draw(t)` en cinco instantes. El último es el de reposo:
-
-![Cinco fotogramas de la escena de las monedas: a 0,45 s el anillo vacío y la primera moneda cayendo (0/10); a 1,1 s cuatro monedas (4/10); a 2 s ocho (8/10); a 3,05 s el anillo se funde alrededor de la insignia (10/10); a 4,4 s la insignia ganada (10/10)](coins-frames.png "La misma función en cinco instantes. A 4,4 s, el fotograma quieto.")
-
-## Paso 3: curvas en forma cerrada
-
-Para que `draw(t)` sea pura, el movimiento no puede salir de una simulación paso a paso. Todas las curvas son **fórmulas cerradas** que se evalúan en cualquier instante. Son cuatro, y caben en una pantalla.
+Para que `draw(t)` sea pura, el movimiento no puede salir de una simulación paso a paso. Todas las curvas son **fórmulas cerradas** que se evalúan en cualquier instante. Son cinco, y caben en una pantalla.
 
 En JavaScript, en el prototipo:
 
 ```js
-function spring(x, w = 14) {          // muelle amortiguado de 0 a 1
+const S = (x, w = 14) => {          // muelle amortiguado de 0 a 1
   if (x <= 0) return 0;
   const z = 0.78, wd = w * Math.sqrt(1 - z * z), e = Math.exp(-z * w * x);
-  return 1 - e * (Math.cos(wd * x) + (z * w / wd) * Math.sin(wd * x));
-}
+  return 1 - e * (Math.cos(wd * x) + ((z * w) / wd) * Math.sin(wd * x));
+};
 const clamp = (v, a = 0, b = 1) => Math.min(b, Math.max(a, v));
-function smooth(a, b, x) { const u = clamp((x - a) / (b - a)); return u * u * (3 - 2 * u); }
+const smooth = (a, b, x) => { const u = clamp((x - a) / (b - a)); return u * u * (3 - 2 * u); };
 const lerp = (a, b, k) => a + (b - a) * k;
+const bump = (t, c, len = 0.14, w = 30) => S(t - c, w) - S(t - c - len, w);
 ```
 
 Y en Swift, en la app, línea por línea:
@@ -100,44 +96,23 @@ public enum Motion {
 }
 ```
 
-`spring` es la respuesta de un muelle con amortiguación 0,78: sube de 0 a 1, se pasa un poco y se asienta. El parámetro `w` decide lo rápido que lo hace. `smooth` es un smoothstep entre dos instantes, perfecto para fundidos. `bump` es un muelle que sube y baja: el «pop» de la insignia al ganarse.
+`spring` es la respuesta de un muelle con amortiguación 0,78: sube de 0 a 1, se pasa un poco y se asienta. El parámetro `w` decide lo rápido que lo hace. `smooth` es un smoothstep entre dos instantes, perfecto para fundidos. `bump` es un muelle que sube y baja: un «pop».
 
-En la demo de arriba puedes cambiar la amortiguación y la frecuencia y ver cómo cambia la caída de las monedas.
+En la demo de arriba puedes cambiar la amortiguación y la frecuencia y ver cómo cambia la forma del muelle. El punto marca dónde está el muelle principal de la escena en cada instante.
 
-## Paso 4: prototipar en el navegador con IA
+## Prototipar en el navegador con IA
 
-El prototipo vive en el kit de diseño, en un archivo de escenas en JavaScript (`motion.js`). Hoy tiene catorce escenas, y la página del kit las enseña todas a la vez, en oscuro y en claro, con su duración y dónde se usa cada una:
-
-![Página «Escenas animadas» del kit: una rejilla de escenas (Encuentra tu rival, Entrena tu táctica, Trae tus partidas, Monedas → insignia, Tu gimnasio diario…), cada una en oscuro y en claro con su nombre y duración](motion-catalog.jpg "El catálogo de escenas del kit. Con ?motion=still se pintan todas en su fotograma quieto.")
-
-Cada escena es una función que recibe el contexto de un `<canvas>` y `t`. Escribirlas con un agente de IA funciona especialmente bien, por tres motivos:
+El prototipo vive en el kit de diseño de MindChess, en un archivo de escenas en JavaScript (`motion.js`). Cada escena es una función que recibe el contexto de un `<canvas>` y `t`. Escribirlas con un agente de IA funciona especialmente bien, por tres motivos:
 
 1. **La descripción en lenguaje natural ya es casi el código.** «Diez monedas en un anillo de radio 88; cae una cada 0,2 s desde 64 pt más arriba con un muelle de frecuencia 16» se traduce casi literalmente.
 2. **Se itera mirando el navegador.** Recargo, arrastro el tiempo hasta el momento que no me gusta y le digo al agente qué cambiar en ese segundo concreto.
-3. **Los datos son reales.** Los colores salen de los tokens del kit, y en las escenas con tablero, de posiciones y jugadas de verdad, con la misma apariencia que la app.
+3. **Los datos son reales.** Los colores salen de los tokens de la app, las piezas son las del juego y los avatares son los de los bots de verdad.
 
-Así es la escena de las monedas en el prototipo (reducida):
+Y luego el mismo agente hace el port. Le paso la escena de JavaScript y el kit de Swift, y como las dos son funciones puras con las mismas curvas, el resultado sale casi a la primera.
 
-```js
-function draw(ctx, t) {
-  const cx = 180, cy = 124, r = 88, forge = 2.75;
-  ctx.globalAlpha = smooth(0, 0.25, t) * (1 - smooth(5.4, 5.9, t)); // entrada y salida
-  const melt = smooth(forge, forge + 0.3, t);
-  for (let i = 0; i < 10; i++) {
-    const a = -Math.PI / 2 + i * 2 * Math.PI / 10;
-    const p = { x: cx + r * Math.cos(a), y: cy + r * Math.sin(a) };
-    const ti = 0.35 + i * 0.2, k = spring(t - ti, 16);
-    if (t <= ti) continue;
-    const y = lerp(p.y - 64, p.y, k);            // cae desde 64 pt más arriba
-    coin(ctx, p.x, y, (t - ti) * 6 * (1 - melt)); // y se funde al forjar
-  }
-  // …el anillo, la insignia que gira, las chispas y el contador
-}
-```
+## El port a SwiftUI
 
-## Paso 5: portar a SwiftUI
-
-Con la escena decidida, el port tiene tres piezas.
+El port tiene tres piezas.
 
 **Un protocolo para las escenas.** Cada escena dice cuánto dura, cuál es su fotograma quieto y cómo se dibuja:
 
@@ -151,7 +126,7 @@ public protocol MotionScene: Sendable {
 }
 ```
 
-**Un lienzo que se copia.** `MotionCanvas` envuelve el `GraphicsContext` de SwiftUI, la paleta del esquema de color y unos cuantos helpers (`circle`, `fill`, `line`, `text`). Es un tipo valor, y eso sustituye al `save()` y `restore()` del canvas de HTML: para cambiar la opacidad o la transformación de una parte, se copia, se cambia la copia y se tira.
+**Un lienzo que se copia.** `MotionCanvas` envuelve el `GraphicsContext` de SwiftUI, la paleta del esquema de color y unos cuantos helpers (`circle`, `fill`, `text`, `image`). Es un tipo valor, y eso sustituye al `save()` y `restore()` del canvas de HTML: para cambiar la opacidad o la transformación de una parte, se copia, se cambia la copia y se tira.
 
 ```swift
 var coin = c                       // copia: guarda el estado
@@ -160,7 +135,55 @@ coin.circle(CGPoint(x: p.x, y: y), 10.5, accent)
 // al salir de este ámbito, `c` sigue como estaba
 ```
 
-**La escena, traducida línea por línea.** Con las mismas curvas y la misma caja, la escena de Swift se lee igual que la de JavaScript:
+**Una vista que da tiempo a la escena.** Es un `Canvas` dentro de un `TimelineView`, que escala la caja de 360 × 280 al hueco disponible y llama a `draw` con el `t` que toque:
+
+```swift
+TimelineView(.animation(minimumInterval: 1 / 60, paused: !isLive || !isOnScreen)) { timeline in
+    Canvas { context, size in
+        let time = reduceMotion || isResting
+            ? scene.stillTime
+            : liveTime(timeline.date.timeIntervalSince(start))
+        draw(in: context, size: size, t: time)
+    }
+}
+```
+
+Con eso, veamos dos escenas reales.
+
+## Caso 1: diez monedas que forjan una insignia
+
+La primera es del onboarding: cada partida que juegas es una moneda, y diez monedas forjan tu primera insignia. Siguiendo la gramática:
+
+| Fase | Tiempo | Qué pasa |
+|---|---|---|
+| Entrada | 0–0,25 s | Aparece el anillo de diez huecos |
+| Acción | 0,35–2,15 s | Cae una moneda cada 0,2 s y el contador sube |
+| Resultado | 2,75–4,0 s | El anillo se funde, la insignia gira y se gana, salen chispas |
+| Reposo | 4,4 s | El fotograma quieto: la insignia y «10/10» |
+
+![Cinco fotogramas de la escena de las monedas: a 0,45 s el anillo vacío y la primera moneda cayendo; a 1,1 s cuatro monedas; a 2 s ocho; a 3,05 s el anillo se funde alrededor de la insignia; a 4,4 s la insignia ganada](coins-frames.png "La misma función en cinco instantes. A 4,4 s, el fotograma quieto.")
+
+Así es en el prototipo (reducida):
+
+```js
+M.define('coins', { dur: 6, still: 4.4, draw(g, t, e) {
+  const { th } = e, cx = 180, cy = 124, R = 88, FORGE = 2.75;
+  g.globalAlpha = smooth(0, 0.25, t) * (1 - smooth(5.4, 5.9, t));  // entrada y salida
+  const melt = smooth(FORGE, FORGE + 0.3, t);
+  for (let i = 0; i < 10; i++) {
+    const a = -Math.PI / 2 + (i * Math.PI * 2) / 10, x = cx + R * Math.cos(a), y = cy + R * Math.sin(a);
+    const ti = 0.35 + i * 0.2, k = S(t - ti, 16);
+    if (t > ti) {
+      g.save(); g.globalAlpha *= clamp((t - ti) * 6) * (1 - melt);
+      const yy = lerp(y - 64, y, k);                                 // cae desde 64 pt más arriba
+      circle(g, x, yy, 10.5, C.accent); g.restore();
+    }
+  }
+  // …el anillo que se funde, la insignia que gira, las chispas y el contador
+} });
+```
+
+Y en Swift, con las mismas curvas y la misma caja, se lee igual:
 
 ```swift
 struct CoinsScene: MotionScene {
@@ -181,35 +204,70 @@ struct CoinsScene: MotionScene {
             let y = M.lerp(p.y - 64, p.y, k)
             coin.circle(CGPoint(x: p.x, y: y), 10.5, accent)
         }
-        // …el anillo, la insignia que gira, las chispas y el contador
+        // …el anillo que se funde, la insignia que gira, las chispas y el contador
     }
 }
 ```
 
-## Paso 6: reproducirla
+## Caso 2: elige tu rival y juega la primera jugada
 
-Queda la vista que da tiempo a la escena. Es un `Canvas` dentro de un `TimelineView`, que escala la caja de 360 × 280 al hueco disponible y llama a `draw` con el `t` que toque:
+La segunda es de la 1.4, para presentar los bots. Tres rivales, uno por nivel. Se elige a Sofía, se sienta junto al tablero y responde a 1.e4 con 1…e5. Aquí ya hay un tablero de verdad, con piezas que vuelan de una casilla a otra:
+
+| Fase | Tiempo | Qué pasa |
+|---|---|---|
+| Entrada | 0–0,6 s | Aparecen las tres tarjetas, una detrás de otra |
+| Acción | 1,35–2,4 s | Sofía se ilumina, los otros dos se van, ella va a su sitio y aparece el tablero |
+| Resultado | 2,75–3,9 s | 1.e4; Sofía piensa (los tres puntos) y responde 1…e5 |
+| Reposo | 4,6 s | El fotograma quieto: Sofía junto al tablero con la última jugada marcada |
+
+![Cinco fotogramas de la escena de los bots: a 0,6 s las tres tarjetas de Pip, Sofía y Viktor; a 1,5 s Sofía elegida con su borde iluminado; a 2,5 s Sofía junto al tablero en la posición inicial; a 3,3 s tras 1.e4, con Sofía pensando; a 4,6 s tras 1…e5](bots-frames.webp "La escena de los bots en cinco instantes. Los avatares y las piezas son los de la app.")
+
+La puedes ver sola en el navegador:
+
+{{< demo src="/demos/motion-scene/?scene=bots" height="680" title="La escena de los bots: tres rivales, se elige uno y se juega 1.e4 e5" >}}
+
+Lo interesante de esta escena es cómo se reparte el trabajo entre funciones. El tablero es una función aparte, `playBoard`, que recibe una posición y una lista de jugadas con el segundo en que se juega cada una. Cada jugada es un muelle de la casilla de salida a la de llegada, y la última se marca en amarillo, como en la app. La escena solo dice qué jugadas y cuándo:
 
 ```swift
-TimelineView(.animation(minimumInterval: 1 / 60, paused: !isLive || !isOnScreen)) { timeline in
-    Canvas { context, size in
-        let time = reduceMotion || isResting
-            ? scene.stillTime
-            : liveTime(timeline.date.timeIntervalSince(start))
-        draw(in: context, size: size, t: time)
+struct BotsScene: MotionScene {
+    let board: BoardTheme
+    let pieces: PieceTheme
+    let avatarStyle: BotAvatarStyle
+    var duration: Double { 6 }
+    var stillTime: Double { 4.6 }
+    var speed: Double { 1.2 }
+
+    func draw(_ c: inout MotionCanvas, t: Double) {
+        let select = 1.35, move = 2.0
+        c.fade(M.smooth(0, 0.2, t) * (1 - M.smooth(5.45, 5.95, t)))
+        let leave = M.smooth(select + 0.3, select + 0.75, t), m = M.spring(t - move, 9)
+        // …Pip y Viktor entran y se van con `leave`
+        let bk = M.spring(t - move - 0.15, 12)
+        if bk > 0 {
+            var table = c
+            table.fade(bk * 1.3)
+            table.context.translateBy(x: 0, y: 14 * (1 - bk))
+            playBoard(table, t: t, origin: CGPoint(x: 132, y: 40), side: 25, fen: startFEN,
+                      moves: [("e2", "e4", 2.75), ("e7", "e5", 3.65)], board: board, pieces: pieces)
+        }
+        // …y la tarjeta de Sofía va de 180 a 62 con el muelle `m`
     }
 }
 ```
 
-Aquí salieron los detalles que no se ven en el prototipo:
+Fíjate en las tres propiedades de arriba: `board`, `pieces` y `avatarStyle`. En el prototipo el tablero es verde y las piezas son las de serie. En la app, la escena usa **el tema de tablero, las piezas y el estilo de avatar que el usuario ha elegido en Ajustes**. Eso es justo lo que un vídeo no puede hacer.
+
+Y `speed: 1.2`. La escena se diseñó en seis segundos, pero en la app conviene que dé la vuelta en cinco. En vez de rehacer los tiempos, la escena declara una velocidad y el tiempo real se multiplica por ella.
+
+## Los detalles que solo salen en la app
+
+Al reproducir las escenas en la app salieron cosas que no se ven en el prototipo:
 
 - **Se reproduce dos veces y se queda quieta.** Una animación en bucle infinito en un onboarding distrae y gasta batería. Después de dos vueltas, la escena se para en su `stillTime`, que está dentro de la segunda vuelta, así que no hay salto. A partir de ahí el `TimelineView` está en pausa y no se redibuja nada.
-- **`speed`.** Algunas escenas se diseñaron más largas de lo que conviene en la app. En vez de rehacer los tiempos, la escena declara una velocidad y el tiempo real se multiplica por ella. Así cada escena da una vuelta en unos cinco segundos.
 - **En pausa fuera de pantalla** y oculta para VoiceOver, porque es decorativa: el texto de la página ya cuenta lo mismo.
-- **Con la apariencia del usuario.** Las escenas con tablero usan el tema de tablero y de piezas que la persona ha elegido en Ajustes.
 - **Con la postura del dispositivo.** La escena del reloj, en el iPhone Duo, enseña el reloj en tabletop real, con la bisagra.
 
-## Paso 7: los tests
+## Los tests
 
 Como el tiempo es un parámetro, un valor de entorno permite fijarlo:
 
@@ -225,8 +283,9 @@ Los snapshots del onboarding y de Novedades pintan cada escena en su fotograma q
 
 ## Lo que me llevo
 
+- **La IA no solo sirve para hacer vídeos con motion graphics.** Si le pides la escena como una función del tiempo, el resultado se puede llevar a código nativo.
 - **Una función del tiempo es más fácil de razonar que una cadena de animaciones.** Y se puede ir a cualquier instante para depurarla.
-- **Las fórmulas cerradas viajan bien entre lenguajes.** Las curvas de JavaScript y las de Swift son las mismas líneas con otra sintaxis.
+- **Las fórmulas cerradas viajan bien entre lenguajes.** Las curvas de JavaScript y las de Swift son las mismas líneas con otra sintaxis, y el port lo hace el mismo agente.
 - **Prototipar en el navegador con un agente es muy rápido** cuando puedes señalar un segundo concreto y decir qué falla.
 - **Accesibilidad y tests salen solos** si el fotograma quieto cuenta la historia.
 
