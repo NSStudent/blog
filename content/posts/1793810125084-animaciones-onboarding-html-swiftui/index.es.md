@@ -13,9 +13,11 @@ showTableOfContents: true
 
 Llevo un tiempo viendo cómo la gente hace motion graphics con IA. Desde que salió Opus 5.5, cada semana aparece alguien con un vídeo de producto, una intro animada o una explicación con tipografía en movimiento, y todo hecho describiendo lo que quiere a un agente que escribe el código.
 
-Después de ver unos cuantos, me pregunté otra cosa: **¿hay alguna forma de hacer esto mismo y llevarlo a SwiftUI nativo?** No quiero un vídeo dentro de la app. Quiero una escena que se dibuje en el dispositivo, con los colores del tema del usuario, que respete los ajustes de accesibilidad y que pueda probar con tests de capturas.
+Después de ver unos cuantos, me pregunté otra cosa: **¿hay alguna forma de hacer esto mismo y llevarlo a SwiftUI nativo?** No quiero un vídeo dentro de la app. Quiero una escena que se dibuje en el dispositivo, como una vista más.
 
-El ajuste que más importa aquí es **Reducir movimiento** (*Reduce Motion* en inglés), en Ajustes › Accesibilidad › Movimiento. Lo activa la gente a la que las animaciones marean o distraen. Las apps lo leen (en SwiftUI, con el valor de entorno `accessibilityReduceMotion`) y deberían cambiar el movimiento por algo quieto o por un fundido simple. Un vídeo no puede hacer eso. Una escena dibujada por la app sí: con el ajuste activado, MindChess no la reproduce y pinta un solo fotograma fijo que ya cuenta la historia.
+Que la escena sea código y no un vídeo incrustado me da control sobre cosas que un vídeo no permite. Puedo cambiar la velocidad sin volver a exportar nada. La misma escena se pinta con los colores del modo claro o del oscuro, porque lee los colores de la app en ese momento. Y se puede adaptar al dispositivo: en el iPhone Duo no tiene sentido enseñar la misma animación con el móvil abierto que cerrado, y la escena del reloj, por ejemplo, enseña la bisagra de verdad cuando el Duo está en modo tabletop.
+
+Hay otro caso que me parece todavía más interesante. Algunas personas activan en el sistema la opción **Reducir movimiento** (*Reduce Motion* en inglés), en Ajustes › Accesibilidad › Movimiento, porque las animaciones las marean o las distraen. Las apps pueden leer ese ajuste (en SwiftUI, con el valor de entorno `accessibilityReduceMotion`). Con un vídeo, lo único que puedes hacer es quitarlo. Con una escena en código, elijo un fotograma que ya cuente la historia y lo dejo como imagen fija, respetando la decisión de esa persona.
 
 Se puede, y este artículo cuenta cómo lo hago en MindChess. El onboarding y la pantalla de Novedades tienen pequeñas escenas animadas. Todas nacieron en HTML con un agente de IA, y todas pasaron a SwiftUI **sin usar ni una animación de SwiftUI**: ni `withAnimation`, ni `matchedGeometryEffect`, ni transiciones.
 
@@ -269,7 +271,6 @@ Al reproducir las escenas en la app salieron cosas que no se ven en el prototipo
 
 - **Se reproduce dos veces y se queda quieta.** Una animación en bucle infinito en un onboarding distrae y gasta batería. Después de dos vueltas, la escena se para en su `stillTime`, que está dentro de la segunda vuelta, así que no hay salto. A partir de ahí el `TimelineView` está en pausa y no se redibuja nada.
 - **En pausa fuera de pantalla** y oculta para VoiceOver, porque es decorativa: el texto de la página ya cuenta lo mismo.
-- **Con la postura del dispositivo.** La escena del reloj, en el iPhone Duo, enseña el reloj en tabletop real, con la bisagra.
 
 ## Los tests
 

@@ -13,9 +13,11 @@ showTableOfContents: true
 
 For a while now I've been watching people make motion graphics with AI. Since Opus 5.5 came out, every week someone shows up with a product video, an animated intro or an explainer full of moving type, all of it made by describing what they want to an agent that writes the code.
 
-After watching a few of them, I started wondering about something else: **is there a way to do the same thing and take it to native SwiftUI?** I don't want a video inside the app. I want a scene that's drawn on the device, in the user's theme colours, that respects the accessibility settings and that I can test with snapshot tests.
+After watching a few of them, I started wondering about something else: **is there a way to do the same thing and take it to native SwiftUI?** I don't want a video inside the app. I want a scene that's drawn on the device, like any other view.
 
-The setting that matters most here is **Reduce Motion**, under Settings › Accessibility › Motion. People turn it on when animations make them dizzy or distract them. Apps read it (in SwiftUI, through the `accessibilityReduceMotion` environment value) and should swap movement for something still or a simple fade. A video can't do that. A scene the app draws itself can: with the setting on, MindChess doesn't play it and draws a single still frame that already tells the story.
+Because the scene is code and not an embedded video, I control things a video can't. I can change its speed without exporting anything again. The same scene is drawn in light or dark mode colours, because it reads the app's colours at that moment. And it can adapt to the device: on the iPhone Duo it makes no sense to show the same animation with the phone open and closed, and the clock scene, for example, shows the real hinge when the Duo is in tabletop mode.
+
+There's another case I find even more interesting. Some people turn on **Reduce Motion** in Settings › Accessibility › Motion, because animations make them dizzy or distract them. Apps can read that setting (in SwiftUI, through the `accessibilityReduceMotion` environment value). With a video, all you can do is remove it. With a scene in code, I pick a frame that already tells the story and leave it as a still image, respecting that person's choice.
 
 It turns out you can, and this post is about how I do it in MindChess. The onboarding and the What's New screen have small animated scenes. They were all born in HTML with an AI agent, and they all moved to SwiftUI **without a single SwiftUI animation**: no `withAnimation`, no `matchedGeometryEffect`, no transitions.
 
@@ -269,7 +271,6 @@ Playing the scenes in the app brought up things you don't see in the prototype:
 
 - **It plays twice and then stays still.** An endlessly looping animation in an onboarding is distracting and drains the battery. After two loops, the scene stops at its `stillTime`, which falls inside the second loop, so there's no jump. From then on the `TimelineView` is paused and nothing is redrawn.
 - **Paused when off screen** and hidden from VoiceOver, because it's decorative: the text on the page already says the same thing.
-- **Aware of the device posture.** On the iPhone Duo, the clock scene shows the clock in real tabletop, with the hinge.
 
 ## The tests
 
